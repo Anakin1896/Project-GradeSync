@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'first_name', 'last_name', 'email', 
             'employee_id', 'role', 'department',
             'title_prefix', 'middle_initial', 'position_title', 'school_name',
-            'is_first_login'
+            'is_first_login',
             'subjects_handled'
         ]
 

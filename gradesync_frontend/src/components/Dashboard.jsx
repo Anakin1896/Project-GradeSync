@@ -351,9 +351,6 @@ const Dashboard = () => {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm animate-in slide-in-from-bottom-4 duration-300 overflow-hidden">
           <div className="flex justify-between items-center p-6 border-b border-gray-50">
             <h2 className="text-xl font-serif font-bold text-[#1A1C29]">Weekly Schedule</h2>
-            <button onClick={openAddModal} className="flex items-center space-x-2 bg-amber-400 hover:bg-amber-500 text-[#1A1C29] px-4 py-2 rounded-lg font-bold transition-colors shadow-sm text-sm">
-              <Plus size={16} /><span>Add Class</span>
-            </button>
           </div>
 
           <div className="overflow-x-auto pb-4 p-4">
@@ -426,6 +423,9 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-serif font-bold text-[#1A1C29]">My Subjects & Blocks</h2>
             <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">Total: {classes.length}</span>
+            <button onClick={openAddModal} className="flex items-center space-x-2 bg-amber-400 hover:bg-amber-500 text-[#1A1C29] px-4 py-2 rounded-lg font-bold transition-colors shadow-sm text-sm">
+              <Plus size={16} /><span>Add Class</span>
+            </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
             {classes.length === 0 ? (
