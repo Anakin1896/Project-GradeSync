@@ -152,7 +152,9 @@ const Profile = () => {
 
           <div className="bg-[#FCFBF8] p-5 rounded-xl border border-gray-100">
             <p className="text-[10px] font-bold text-gray-400 tracking-wider mb-1">SUBJECTS HANDLED</p>
-            <p className="font-bold text-[#1A1C29] text-lg">5</p> 
+            <p className="font-bold text-[#1A1C29] text-lg">
+              {profileData.subjects_handled !== undefined ? profileData.subjects_handled : 0}
+            </p> 
           </div>
         </div>
 
