@@ -340,11 +340,17 @@ class ClassActivitiesView(APIView):
         period, _ = Period.objects.get_or_create(name=period_name, defaults={'sequence_order': 99})
 
         a_type = data.get('type', 'Activity')
-        component, _ = GradingComponent.objects.get_or_create(
+        search_term = 'Activ' if a_type == 'Activity' else a_type
+        component = GradingComponent.objects.filter(
             class_field=schedule,
-            name=f"{a_type}s",
-            defaults={'weight_percentage': 0.0}
-        )
+            name__icontains=search_term
+        ).first()
+
+        if not component:
+            return Response(
+                {'error': f'No weight category found for "{a_type}". Please set up your Component Weights in the Gradebook first!'}, 
+                status=400
+            )
 
         Assessment.objects.create( 
             component=component,

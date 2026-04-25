@@ -106,7 +106,9 @@ class Assessment(models.Model):
         ('Quiz', 'Quiz'),
         ('Activity', 'Activity'),
         ('Exam', 'Exam'),
-        ('Project', 'Project')
+        ('Project', 'Project'),
+        ('Recitation', 'Recitation'),
+        ('Attendance', 'Attendance')
     ]
     assessment_type = models.CharField(max_length=20, choices=ASSESSMENT_TYPES, default='Activity')
 
