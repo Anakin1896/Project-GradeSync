@@ -33,6 +33,8 @@ class Program(models.Model):
     code = models.CharField(unique=True, max_length=20)
     name = models.CharField(max_length=100)
 
+    program_type = models.CharField(max_length=50, default='College', choices=[('College', 'College'), ('Basic Education', 'Basic Education')])
+
     def __str__(self):
         return f"{self.code} - {self.name}"
 
@@ -41,6 +43,9 @@ class Subject(models.Model):
     code = models.CharField(unique=True, max_length=20)
     title = models.CharField(max_length=100)
     units = models.IntegerField(default=0)
+
+    program = models.ForeignKey(Program, on_delete=models.SET_NULL, null=True, blank=True)
+    year_level = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.code} - {self.title}"

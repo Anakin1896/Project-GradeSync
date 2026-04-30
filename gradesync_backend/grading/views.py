@@ -256,17 +256,14 @@ class AvailableStudentsView(APIView):
         level_filter = request.query_params.get('level', None)
         grade_filter = request.query_params.get('grade', None) 
 
-        students = Student.objects.filter(is_active=True).select_related('program')
+        students = Student.objects.all().select_related('program')
 
         if level_filter == 'college':
             students = students.exclude(program__program_type='Basic Education')
-            
         elif level_filter == 'elementary':
             students = students.filter(program__program_type='Basic Education', current_year_level__lte=6)
-            
         elif level_filter == 'jhs':
             students = students.filter(program__program_type='Basic Education', current_year_level__range=(7, 10))
-            
         elif level_filter == 'shs':
             students = students.filter(program__program_type='Basic Education', current_year_level__range=(11, 12))
 
@@ -281,7 +278,7 @@ class AvailableStudentsView(APIView):
         } for s in students]
         
         return Response(data)
-    
+
 class AvailableSubjectsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -289,17 +286,14 @@ class AvailableSubjectsView(APIView):
         level_filter = request.query_params.get('level', None)
         grade_filter = request.query_params.get('grade', None)
 
-        subjects = Subject.objects.filter(is_active=True).select_related('program', 'department')
+        subjects = Subject.objects.all().select_related('program')
 
         if level_filter == 'college':
             subjects = subjects.exclude(program__program_type='Basic Education')
-            
         elif level_filter == 'elementary':
             subjects = subjects.filter(program__program_type='Basic Education', year_level__lte=6)
-            
         elif level_filter == 'jhs':
             subjects = subjects.filter(program__program_type='Basic Education', year_level__range=(7, 10))
-            
         elif level_filter == 'shs':
             subjects = subjects.filter(program__program_type='Basic Education', year_level__range=(11, 12))
 
@@ -310,7 +304,7 @@ class AvailableSubjectsView(APIView):
             "code": sub.code, 
             "title": sub.title,
             "units": sub.units,
-            "year_level": sub.year_level
+            "year_level": getattr(sub, 'year_level', None)
         } for sub in subjects]
         
         return Response(data)
