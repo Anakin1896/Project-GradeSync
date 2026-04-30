@@ -255,17 +255,23 @@ class AvailableStudentsView(APIView):
     def get(self, request):
         level_filter = request.query_params.get('level', None)
         grade_filter = request.query_params.get('grade', None) 
+
         students = Student.objects.filter(is_active=True).select_related('program')
 
         if level_filter == 'college':
             students = students.exclude(program__program_type='Basic Education')
             
-        elif level_filter == 'k12':
+        elif level_filter == 'elementary':
+            students = students.filter(program__program_type='Basic Education', current_year_level__lte=6)
+            
+        elif level_filter == 'jhs':
+            students = students.filter(program__program_type='Basic Education', current_year_level__range=(7, 10))
+            
+        elif level_filter == 'shs':
+            students = students.filter(program__program_type='Basic Education', current_year_level__range=(11, 12))
 
-            students = students.filter(program__program_type='Basic Education')
-
-            if grade_filter:
-                students = students.filter(current_year_level=grade_filter)
+        if grade_filter:
+            students = students.filter(current_year_level=grade_filter)
 
         data = [{
             "student_number": s.student_number,
