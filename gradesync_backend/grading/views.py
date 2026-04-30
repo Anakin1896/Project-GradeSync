@@ -678,11 +678,17 @@ class ClassComponentsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, class_id):
+
+        period_id = request.query_params.get('period_id')
         schedule = ClassSchedule.objects.filter(class_id=class_id, teacher=request.user).first()
+
         if not schedule:
             return Response({'error': 'Class not found'}, status=404)
-        
+
         components = GradingComponent.objects.filter(class_field=schedule)
+
+        if period_id:
+            components = components.filter(period_id=period_id)
         
         data = []
         for c in components:
@@ -690,17 +696,21 @@ class ClassComponentsView(APIView):
             data.append({
                 "id": c.pk, 
                 "name": c.name, 
-                "weight_percentage": float(safe_weight)
+                "weight_percentage": float(safe_weight),
+                "period_id": c.period_id 
             })
             
         return Response(data)
 
     def put(self, request, class_id):
         schedule = ClassSchedule.objects.filter(class_id=class_id, teacher=request.user).first()
+
         if not schedule:
             return Response({'error': 'Class not found'}, status=404)
 
+        period_id = request.data.get('period_id')
         components_data = request.data.get('components', [])
+        
         for comp in components_data:
             comp_id = comp.get('id')
             comp_name = comp.get('name', '').strip()
@@ -710,17 +720,18 @@ class ClassComponentsView(APIView):
                 continue
 
             if comp_id:
-
                 GradingComponent.objects.filter(pk=comp_id, class_field=schedule).update(
                     name=comp_name,
-                    weight_percentage=comp_weight
+                    weight_percentage=comp_weight,
+                    period_id=period_id 
                 )
             else:
 
-                GradingComponent.objects.update_or_create(
+                GradingComponent.objects.create(
                     class_field=schedule,
+                    period_id=period_id,
                     name=comp_name,
-                    defaults={'weight_percentage': comp_weight}
+                    weight_percentage=comp_weight
                 )
             
         return Response({'message': 'Component weights updated successfully'})

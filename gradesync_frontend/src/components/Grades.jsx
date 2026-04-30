@@ -21,6 +21,7 @@ const Grades = () => {
   const [components, setComponents] = useState([]);
   const [isSavingWeights, setIsSavingWeights] = useState(false);
   const [componentToDelete, setComponentToDelete] = useState(null);
+  const [selectedWeightPeriod, setSelectedWeightPeriod] = useState('');
 
   const [isBreakdownModalOpen, setIsBreakdownModalOpen] = useState(false);
   const [breakdownData, setBreakdownData] = useState([]);
@@ -72,9 +73,26 @@ const Grades = () => {
   };
 
   const openWeightsModal = () => {
-    fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/`, { headers: getAuthHeaders() })
+    const initialPeriod = periods.length > 0 ? periods[0].period : '';
+    setSelectedWeightPeriod(initialPeriod);
+    
+    if (initialPeriod) {
+      fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/?period_id=${initialPeriod}`, { headers: getAuthHeaders() })
+        .then(res => res.json())
+        .then(data => { setComponents(data); setIsWeightsModalOpen(true); })
+        .catch(err => console.error(err));
+    } else {
+      setIsWeightsModalOpen(true);
+    }
+  };
+
+  const handleWeightPeriodChange = (e) => {
+    const newPeriodId = e.target.value;
+    setSelectedWeightPeriod(newPeriodId);
+    
+    fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/?period_id=${newPeriodId}`, { headers: getAuthHeaders() })
       .then(res => res.json())
-      .then(data => { setComponents(data); setIsWeightsModalOpen(true); })
+      .then(data => setComponents(data))
       .catch(err => console.error(err));
   };
 
@@ -88,7 +106,7 @@ const Grades = () => {
       const response = await fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ components })
+        body: JSON.stringify({ period_id: selectedWeightPeriod, components }) 
       });
       if (response.ok) setIsWeightsModalOpen(false);
     } catch (err) { console.error(err); } finally { setIsSavingWeights(false); }
@@ -317,6 +335,19 @@ const Grades = () => {
             
             <form onSubmit={handleSaveWeights}>
               <div className="p-6 space-y-4">
+
+                <div className="mb-4">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Select Period</label>
+                  <select 
+                    value={selectedWeightPeriod} 
+                    onChange={handleWeightPeriodChange}
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block p-2.5 font-bold"
+                  >
+                    {periods.map(p => (
+                      <option key={p.period} value={p.period}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
                 
                 {components.length === 0 && (
                   <p className="text-xs text-gray-500 text-center mb-4 italic">No categories yet. Click below to add your grading components (e.g. Quizzes, Attendance).</p>

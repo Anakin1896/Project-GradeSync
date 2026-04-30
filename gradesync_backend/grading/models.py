@@ -93,6 +93,7 @@ class Attendance(models.Model):
 class GradingComponent(models.Model):
     component_id = models.AutoField(primary_key=True)
     class_field = models.ForeignKey(ClassSchedule, on_delete=models.CASCADE)
+    period = models.ForeignKey('core.Period', on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=50)
     weight_percentage = models.DecimalField(max_digits=5, decimal_places=2)
 
