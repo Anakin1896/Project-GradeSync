@@ -294,11 +294,17 @@ class AvailableSubjectsView(APIView):
         if level_filter == 'college':
             subjects = subjects.exclude(program__program_type='Basic Education')
             
-        elif level_filter == 'k12':
-            subjects = subjects.filter(program__program_type='Basic Education')
+        elif level_filter == 'elementary':
+            subjects = subjects.filter(program__program_type='Basic Education', year_level__lte=6)
+            
+        elif level_filter == 'jhs':
+            subjects = subjects.filter(program__program_type='Basic Education', year_level__range=(7, 10))
+            
+        elif level_filter == 'shs':
+            subjects = subjects.filter(program__program_type='Basic Education', year_level__range=(11, 12))
 
-            if grade_filter:
-                subjects = subjects.filter(year_level=grade_filter)
+        if grade_filter:
+            subjects = subjects.filter(year_level=grade_filter)
 
         data = [{
             "code": sub.code, 
