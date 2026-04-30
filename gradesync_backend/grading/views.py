@@ -253,35 +253,54 @@ class AvailableStudentsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        level_filter = request.query_params.get('level', None)
+        grade_filter = request.query_params.get('grade', None) 
+        students = Student.objects.filter(is_active=True).select_related('program')
 
-        students = Student.objects.all().select_related('program').order_by('last_name', 'first_name')
-        
-        data = []
-        for s in students:
-            data.append({
-                "student_number": s.student_number,
-                "first_name": s.first_name,
-                "last_name": s.last_name,
-                "program": s.program.code if s.program else "N/A",
-                "current_year_level": str(s.current_year_level)
-            })
+        if level_filter == 'college':
+            students = students.exclude(program__program_type='Basic Education')
             
+        elif level_filter == 'k12':
+
+            students = students.filter(program__program_type='Basic Education')
+
+            if grade_filter:
+                students = students.filter(current_year_level=grade_filter)
+
+        data = [{
+            "student_number": s.student_number,
+            "full_name": f"{s.last_name}, {s.first_name}",
+            "program": s.program.code if s.program else "N/A",
+            "year_level": s.current_year_level
+        } for s in students]
+        
         return Response(data)
     
 class AvailableSubjectsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        
-        subjects = Subject.objects.all().order_by('code')
-        
-        data = []
-        for s in subjects:
-            data.append({
-                "code": s.code,
-                "title": s.title
-            })
+        level_filter = request.query_params.get('level', None)
+        grade_filter = request.query_params.get('grade', None)
+
+        subjects = Subject.objects.filter(is_active=True).select_related('program', 'department')
+
+        if level_filter == 'college':
+            subjects = subjects.exclude(program__program_type='Basic Education')
             
+        elif level_filter == 'k12':
+            subjects = subjects.filter(program__program_type='Basic Education')
+
+            if grade_filter:
+                subjects = subjects.filter(year_level=grade_filter)
+
+        data = [{
+            "code": sub.code, 
+            "title": sub.title,
+            "units": sub.units,
+            "year_level": sub.year_level
+        } for sub in subjects]
+        
         return Response(data)
 
 class ClassActivitiesView(APIView):
