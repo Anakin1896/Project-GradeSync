@@ -103,13 +103,11 @@ const Grades = () => {
       });
       if (response.ok) {
         const sourceComponents = await response.json();
-
         const copiedComponents = sourceComponents.map(comp => ({
           id: null, 
           name: comp.name,
           weight_percentage: comp.weight_percentage
         }));
-
         setComponents(copiedComponents);
       } else {
         alert("Failed to fetch weights to copy.");
@@ -305,13 +303,26 @@ const Grades = () => {
                   <tr><td colSpan={periods.length + 4} className="p-12 text-center text-gray-500 font-medium">No students enrolled in this class yet.</td></tr>
                 ) : (
                   currentClassStudents.map((e) => {
-                    const hasFinal = e.final_grade !== null && e.final_grade !== undefined;
-                    const finalGrade = hasFinal ? Number(e.final_grade).toFixed(2) : '--';
+                    
+                    const hasAllPeriodGrades = periods.length > 0 && periods.every(p => getPeriodGrade(e, p) !== '--');
+                    const hasSavedFinal = e.final_grade !== null && e.final_grade !== undefined;
+                    
+                    let displayFinalGrade = '--';
+                    let displayRemarks = 'No Grade';
+                    
+                    if (hasSavedFinal) {
+                      displayFinalGrade = Number(e.final_grade).toFixed(2);
+                      displayRemarks = e.remarks || 'No Grade';
+                    } else if (hasAllPeriodGrades) {
+                      const projected = calculateProjectedFinal(e);
+                      displayFinalGrade = projected.grade;
+                      displayRemarks = projected.remarks;
+                    }
                     
                     let remarkColor = "bg-gray-50 text-gray-500 border-gray-200";
-                    if (e.remarks === "Passed") remarkColor = "bg-emerald-50 text-emerald-600 border-emerald-200";
-                    if (e.remarks === "Failed") remarkColor = "bg-red-50 text-red-600 border-red-200";
-                    if (e.remarks === "Conditional") remarkColor = "bg-amber-50 text-amber-600 border-amber-200";
+                    if (displayRemarks === "Passed") remarkColor = "bg-emerald-50 text-emerald-600 border-emerald-200";
+                    if (displayRemarks === "Failed") remarkColor = "bg-red-50 text-red-600 border-red-200";
+                    if (displayRemarks === "Conditional") remarkColor = "bg-amber-50 text-amber-600 border-amber-200";
 
                     return (
                       <tr key={e.enrollment_id} className="hover:bg-gray-50/50 transition-colors">
@@ -328,10 +339,10 @@ const Grades = () => {
                         ))}
 
                         <td className="p-4 text-center bg-amber-50/30">
-                          <span className={`text-lg font-bold ${hasFinal ? 'text-[#1A1C29]' : 'text-gray-300'}`}>{finalGrade}</span>
+                          <span className={`text-lg font-bold ${displayFinalGrade !== '--' ? 'text-[#1A1C29]' : 'text-gray-300'}`}>{displayFinalGrade}</span>
                         </td>
                         <td className="p-4 text-center">
-                          <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold border ${remarkColor}`}>{e.remarks || 'No Grade'}</span>
+                          <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold border ${remarkColor}`}>{displayRemarks}</span>
                         </td>
                         <td className="p-4 text-right">
                           <button onClick={() => openGradeModal(e)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-lg transition-colors border border-amber-200">
