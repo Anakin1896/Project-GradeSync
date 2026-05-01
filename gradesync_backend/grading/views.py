@@ -3,6 +3,7 @@ import re
 from datetime import date, datetime
 from students.models import Student
 from students.models import Student, Section
+from core.models import Period
 from .models import Event
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
@@ -275,6 +276,7 @@ class AvailableStudentsView(APIView):
             "full_name": f"{s.last_name}, {s.first_name}",
             "program": s.program.code if s.program else "N/A",
             "year_level": s.current_year_level
+            
         } for s in students]
         
         return Response(data)
@@ -490,6 +492,8 @@ class ClassAttendanceView(APIView):
 
     def get(self, request, class_id):
         date_str = request.GET.get('date')
+        period_id = request.GET.get('period_id')
+        
         if not date_str:
             return Response({'error': 'Date is required'}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -499,8 +503,11 @@ class ClassAttendanceView(APIView):
 
         enrollments = Enrollment.objects.filter(class_field=schedule).select_related('student')
 
-        records = Attendance.objects.filter(enrollment__class_field=schedule, date_logged=date_str)
-        status_map = {r.enrollment.enrollment_id: r.status for r in records}
+        records_query = Attendance.objects.filter(enrollment__class_field=schedule, date_logged=date_str)
+        if period_id:
+            records_query = records_query.filter(period_id=period_id)
+
+        status_map = {r.enrollment.enrollment_id: r.status for r in records_query}
         
         data = []
         for e in enrollments:
@@ -519,29 +526,80 @@ class ClassAttendanceView(APIView):
         enrollment_id = request.data.get('enrollment_id')
         date_str = request.data.get('date')
         status_val = request.data.get('status')
+        period_id = request.data.get('period_id')
         
         enrollment = Enrollment.objects.filter(enrollment_id=enrollment_id).first()
+        period = Period.objects.filter(period_id=period_id).first() if period_id else None
+
         if not enrollment:
             return Response({'error': 'Invalid enrollment'}, status=status.HTTP_400_BAD_REQUEST)
 
         Attendance.objects.update_or_create(
             enrollment=enrollment,
             date_logged=date_str, 
+            period=period,
             defaults={'status': status_val}
         )
-        return Response({'message': 'Attendance saved'})
+
+        if period:
+            schedule = enrollment.class_field
+
+            component = GradingComponent.objects.filter(
+                class_field=schedule, 
+                period=period, 
+                name__icontains='Attendance'
+            ).first()
+
+            if component:
+
+                assessment, _ = Assessment.objects.get_or_create(
+                    component=component,
+                    period=period,
+                    assessment_type='Attendance',
+                    defaults={
+                        'title': f'{period.name} Attendance', 
+                        'total_points': 100.00
+                    }
+                )
+
+                attendances = Attendance.objects.filter(enrollment=enrollment, period=period)
+                total_days = attendances.count()
+                score = 0
+                
+                for att in attendances:
+                    if att.status in ['Present', 'Excused']:
+                        score += 1
+                    elif att.status == 'Late':
+                        score += 0.5
+                
+                computed_score = (score / total_days) * 100 if total_days > 0 else 0
+
+                StudentScore.objects.update_or_create(
+                    assessment=assessment,
+                    enrollment=enrollment,
+                    defaults={'score': round(computed_score, 2)}
+                )
+
+        return Response({'message': 'Attendance saved and synced to gradebook'})
 
 class ClassAttendanceSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, class_id):
+
+        period_id = request.query_params.get('period_id')
         schedule = ClassSchedule.objects.filter(class_id=class_id, teacher=request.user).first()
+
         if not schedule:
             return Response({'error': 'Class not found'}, status=status.HTTP_404_NOT_FOUND)
 
         enrollments = Enrollment.objects.filter(class_field=schedule).select_related('student')
-        records = Attendance.objects.filter(enrollment__class_field=schedule).order_by('date_logged')
+        records_query = Attendance.objects.filter(enrollment__class_field=schedule)
 
+        if period_id:
+            records_query = records_query.filter(period_id=period_id)
+
+        records = records_query.order_by('date_logged')
         unique_dates = sorted(list(set(r.date_logged.strftime('%Y-%m-%d') for r in records)))
 
         attendance_map = {}

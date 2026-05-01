@@ -96,6 +96,29 @@ const Grades = () => {
       .catch(err => console.error(err));
   };
 
+  const handleCopyWeights = async (sourcePeriodId) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/?period_id=${sourcePeriodId}`, { 
+        headers: getAuthHeaders() 
+      });
+      if (response.ok) {
+        const sourceComponents = await response.json();
+
+        const copiedComponents = sourceComponents.map(comp => ({
+          id: null, 
+          name: comp.name,
+          weight_percentage: comp.weight_percentage
+        }));
+
+        setComponents(copiedComponents);
+      } else {
+        alert("Failed to fetch weights to copy.");
+      }
+    } catch (err) {
+      console.error("Error copying weights:", err);
+    }
+  };
+
   const handleSaveWeights = async (e) => {
     e.preventDefault();
     const total = components.reduce((sum, c) => sum + Number(c.weight_percentage), 0);
@@ -337,7 +360,26 @@ const Grades = () => {
               <div className="p-6 space-y-4">
 
                 <div className="mb-4">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Select Period</label>
+                  <div className="flex justify-between items-end mb-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Select Period</label>
+                    {periods.length > 1 && (
+                      <div className="flex items-center text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        <span className="mr-1">Copy from:</span>
+                        <select 
+                          className="bg-transparent border-none p-0 outline-none cursor-pointer hover:text-amber-700"
+                          onChange={(e) => {
+                            if(e.target.value) handleCopyWeights(e.target.value);
+                            e.target.value = ""; 
+                          }}
+                        >
+                          <option value="">-- Select --</option>
+                          {periods.filter(p => p.period.toString() !== selectedWeightPeriod.toString()).map(p => (
+                            <option key={p.period} value={p.period}>{p.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                   <select 
                     value={selectedWeightPeriod} 
                     onChange={handleWeightPeriodChange}
