@@ -4,6 +4,8 @@ import { BookOpen, Search, Loader2, CalendarDays, CheckCircle2, AlertCircle, Plu
 const Attendance = () => {
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
+  
+  const [selectedPeriod, setSelectedPeriod] = useState(''); 
   const [searchTerm, setSearchTerm] = useState('');
 
   const [isTakingAttendance, setIsTakingAttendance] = useState(false);
@@ -25,7 +27,8 @@ const Attendance = () => {
         if (data.classes) {
           const teacherClasses = data.classes.map(cls => ({
             id: cls.id.toString(),
-            name: `${cls.subject} — ${cls.section}`
+            name: `${cls.subject} — ${cls.section}`,
+            grading_template: cls.grading_template 
           }));
           
           setClasses(teacherClasses);
@@ -35,10 +38,24 @@ const Attendance = () => {
       .catch(err => console.error("Failed to load classes:", err));
   }, []);
 
+  const selectedClassData = classes.find(c => c.id === selectedClassId);
+  const periods = selectedClassData?.grading_template?.items || [];
+
+  useEffect(() => {
+    if (periods.length > 0 && !periods.some(p => p.period.toString() === selectedPeriod)) {
+      setSelectedPeriod(periods[0].period.toString());
+    } else if (periods.length === 0) {
+      setSelectedPeriod('');
+    }
+  }, [periods, selectedPeriod]);
+
   const fetchSummary = () => {
     if (!selectedClassId) return;
     setIsLoading(true);
-    fetch(`http://127.0.0.1:8000/api/grading/class-attendance-summary/${selectedClassId}/`, { headers: getAuthHeaders() })
+    
+    const periodQuery = selectedPeriod ? `?period_id=${selectedPeriod}` : '';
+    
+    fetch(`http://127.0.0.1:8000/api/grading/class-attendance-summary/${selectedClassId}/${periodQuery}`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { setSummaryData(data); setIsLoading(false); })
       .catch(err => { console.error("Failed to fetch summary:", err); setIsLoading(false); });
@@ -47,7 +64,10 @@ const Attendance = () => {
   const fetchDaily = () => {
     if (!selectedClassId || !selectedDate) return;
     setIsLoading(true);
-    fetch(`http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/?date=${selectedDate}`, { headers: getAuthHeaders() })
+    
+    const periodQuery = selectedPeriod ? `&period_id=${selectedPeriod}` : '';
+
+    fetch(`http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/?date=${selectedDate}${periodQuery}`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { 
         const dataWithStatus = data.map(student => ({ ...student, saveStatus: 'idle' }));
@@ -57,10 +77,11 @@ const Attendance = () => {
       .catch(err => { console.error("Failed to fetch daily:", err); setIsLoading(false); });
   };
 
+  
   useEffect(() => {
     if (isTakingAttendance) fetchDaily();
     else fetchSummary();
-  }, [selectedClassId, isTakingAttendance, selectedDate]);
+  }, [selectedClassId, isTakingAttendance, selectedDate, selectedPeriod]);
 
   const handleStatusChange = (enrollmentId, newStatus) => {
     setDailyRoster(prev => prev.map(s => s.enrollment_id === enrollmentId ? { ...s, status: newStatus, saveStatus: 'saving' } : s));
@@ -68,7 +89,12 @@ const Attendance = () => {
     fetch(`http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ enrollment_id: enrollmentId, date: selectedDate, status: newStatus })
+      body: JSON.stringify({ 
+        enrollment_id: enrollmentId, 
+        date: selectedDate, 
+        status: newStatus,
+        period_id: selectedPeriod
+      })
     })
     .then(res => {
       if (res.ok) {
@@ -96,9 +122,23 @@ const Attendance = () => {
           <button onClick={() => setIsTakingAttendance(false)} className="flex items-center space-x-2 text-gray-500 hover:text-amber-600 font-bold transition-colors">
             <ChevronLeft size={20} /><span>Back to Summary</span>
           </button>
-          <div className="flex items-center space-x-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-            <div className="bg-amber-50 p-1.5 rounded-lg text-amber-600"><CalendarDays size={18} /></div>
-            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:outline-none cursor-pointer px-2" />
+          
+          <div className="flex gap-3">
+            <div className="flex items-center space-x-2 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+              <span className="text-xs font-bold text-gray-400 pl-2">PERIOD:</span>
+              <select 
+                value={selectedPeriod} 
+                onChange={(e) => setSelectedPeriod(e.target.value)} 
+                className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:ring-0 cursor-pointer pr-4 focus:outline-none"
+              >
+                {periods.length === 0 ? <option value="">No Periods</option> : periods.map(p => <option key={p.period} value={p.period}>{p.name}</option>)}
+              </select>
+            </div>
+
+            <div className="flex items-center space-x-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+              <div className="bg-amber-50 p-1.5 rounded-lg text-amber-600"><CalendarDays size={18} /></div>
+              <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:outline-none cursor-pointer px-2" />
+            </div>
           </div>
         </div>
 
@@ -187,10 +227,32 @@ const Attendance = () => {
         <div className="flex items-center gap-4 flex-1">
           <div className="flex items-center space-x-3 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
             <div className="bg-white p-1.5 rounded shadow-sm text-amber-500"><BookOpen size={18} /></div>
-            <select value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)} className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:ring-0 cursor-pointer pr-8 py-1 focus:outline-none">
+            <select 
+              value={selectedClassId} 
+              onChange={(e) => {
+                setSelectedClassId(e.target.value);
+                setSelectedPeriod('');
+              }} 
+              className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:ring-0 cursor-pointer pr-8 py-1 focus:outline-none"
+            >
               {classes.length === 0 ? <option value="">No classes available</option> : classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
+
+          <div className="flex items-center space-x-3 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="bg-transparent border-none text-sm font-bold text-gray-600 focus:ring-0 cursor-pointer pr-8 py-1 focus:outline-none"
+            >
+              {periods.length === 0 ? (
+                <option value="">No Periods Assigned</option>
+              ) : (
+                periods.map(p => <option key={p.period} value={p.period}>{p.name}</option>)
+              )}
+            </select>
+          </div>
+
           <div className="relative w-64 shrink-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <input type="text" placeholder="Search student..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-amber-400" />
@@ -235,14 +297,24 @@ const Attendance = () => {
             ) : (
               filteredSummary.map(student => {
 
-                let p = 0; let a = 0;
+                let p = 0; let a = 0; let earnedPoints = 0;
+                
                 Object.values(student.attendance).forEach(val => {
-                  if (val === 'Present' || val === 'Late') p++;
-                  if (val === 'Absent') a++;
+                  if (val === 'Present' || val === 'Excused') {
+                    p++;              
+                    earnedPoints += 1; 
+                  }
+                  if (val === 'Late') {
+                    p++;                 
+                    earnedPoints += 0.5; 
+                  }
+                  if (val === 'Absent') {
+                    a++;
+                  }
                 });
                 
                 const totalDays = summaryData.dates.length;
-                const rate = totalDays > 0 ? Math.round((p / totalDays) * 100) : 0;
+                const rate = totalDays > 0 ? Math.round((earnedPoints / totalDays) * 100) : 0;
 
                 let rateColor = "bg-emerald-100 text-emerald-700";
                 if (rate < 85) rateColor = "bg-amber-100 text-amber-700";
