@@ -4,12 +4,10 @@ import { Search, Users, Loader2, UserPlus, X, Save, ArrowLeft, Database, Trash2,
 const Students = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
   const [searchTerm, setSearchTerm] = useState('');
   const [rosterFilterProgram, setRosterFilterProgram] = useState('');
   const [rosterFilterYear, setRosterFilterYear] = useState('');
   const [rosterFilterSection, setRosterFilterSection] = useState('');
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStep, setModalStep] = useState('selection'); 
   const [eduType, setEduType] = useState(''); 
@@ -19,12 +17,10 @@ const Students = () => {
   const [isUnenrolling, setIsUnenrolling] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState('');
-
   const [formData, setFormData] = useState({
     student_number: '', first_name: '', last_name: '', sex: 'F', email: '', 
     program: '', current_year_level: 1, section: '', subject: '' 
   });
-
   const [availableStudents, setAvailableStudents] = useState([]);
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [programs, setPrograms] = useState([]); 
@@ -137,7 +133,7 @@ const Students = () => {
     setIsModalOpen(false);
     setModalStep('selection');
     setEduType('');
-    setErrorMessage(''); 
+    setErrorMessage('');
     setFormData(prev => ({ 
         ...prev, student_number: '', first_name: '', last_name: '', sex: 'F', email: '', 
         program: programs.length > 0 ? programs[0].code : '', current_year_level: 1, section: '' 
@@ -146,7 +142,7 @@ const Students = () => {
   };
 
   const handleBackNavigation = () => {
-    setErrorMessage(''); 
+    setErrorMessage('');
     if (modalStep === 'existing' || modalStep === 'new_edu') setModalStep('selection');
     else if (modalStep === 'new_year') setModalStep('new_edu');
     else if (modalStep === 'new_form') setModalStep('new_year');
@@ -170,9 +166,9 @@ const Students = () => {
   });
 
   const filteredGlobal = availableStudents.filter(s => {
-    const matchesSearch = `${s.first_name} ${s.last_name} ${s.student_number}`.toLowerCase().includes(searchExisting.toLowerCase());
+    const matchesSearch = `${s.full_name} ${s.student_number}`.toLowerCase().includes(searchExisting.toLowerCase());
     const matchesProgram = filterProgram === '' || s.program === filterProgram;
-    const matchesYear = filterYear === '' || String(s.current_year_level) === String(filterYear);
+    const matchesYear = filterYear === '' || String(s.year_level) === String(filterYear);
     return matchesSearch && matchesProgram && matchesYear;
   });
 
@@ -226,6 +222,7 @@ const Students = () => {
                 <th className="p-4 text-xs font-bold text-gray-500 tracking-wider text-right">ACTION</th>
               </tr>
             </thead>
+            
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr><td colSpan="5" className="p-8 text-center text-gray-500"><Loader2 className="animate-spin mx-auto mb-2" size={24} />Loading...</td></tr>
@@ -383,8 +380,8 @@ const Students = () => {
                         {filteredGlobal.map(student => (
                           <div key={student.student_number} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:shadow-sm transition-shadow">
                             <div>
-                              <p className="font-bold text-[#1A1C29]">{student.last_name}, {student.first_name}</p>
-                              <p className="text-xs text-gray-500 mt-0.5">ID: {student.student_number} • {student.program} • Year {student.current_year_level}</p>
+                              <p className="font-bold text-[#1A1C29]">{student.full_name}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">ID: {student.student_number} • {student.program} • Year {student.year_level}</p>
                             </div>
 
                             <button onClick={() => {
