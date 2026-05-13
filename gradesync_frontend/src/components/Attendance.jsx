@@ -4,7 +4,6 @@ import { BookOpen, Search, Loader2, CalendarDays, CheckCircle2, AlertCircle, Plu
 const Attendance = () => {
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
-  
   const [selectedPeriod, setSelectedPeriod] = useState(''); 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -40,6 +39,7 @@ const Attendance = () => {
 
   const selectedClassData = classes.find(c => c.id === selectedClassId);
   const periods = selectedClassData?.grading_template?.items || [];
+  const isArchived = selectedClassData?.is_active === false;
 
   useEffect(() => {
     if (periods.length > 0 && !periods.some(p => p.period.toString() === selectedPeriod)) {
@@ -64,7 +64,6 @@ const Attendance = () => {
   const fetchDaily = () => {
     if (!selectedClassId || !selectedDate) return;
     setIsLoading(true);
-    
     const periodQuery = selectedPeriod ? `&period_id=${selectedPeriod}` : '';
 
     fetch(`http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/?date=${selectedDate}${periodQuery}`, { headers: getAuthHeaders() })
@@ -85,7 +84,6 @@ const Attendance = () => {
 
   const handleStatusChange = (enrollmentId, newStatus) => {
     setDailyRoster(prev => prev.map(s => s.enrollment_id === enrollmentId ? { ...s, status: newStatus, saveStatus: 'saving' } : s));
-
     fetch(`http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -115,7 +113,6 @@ const Attendance = () => {
     const presentCount = dailyRoster.filter(s => s.status === 'Present').length;
     const lateCount = dailyRoster.filter(s => s.status === 'Late').length;
     const absentCount = dailyRoster.filter(s => s.status === 'Absent').length;
-
     return (
       <div className="max-w-6xl animate-in fade-in slide-in-from-bottom-8 duration-300 relative pb-10">
         <div className="flex justify-between items-center mb-6">
@@ -171,7 +168,7 @@ const Attendance = () => {
                   </td>
                   <td className="p-4 text-center">
                     <div className="inline-flex rounded-lg shadow-sm p-1 bg-gray-50 border border-gray-200 gap-1">
-                      <button onClick={() => handleStatusChange(student.enrollment_id, 'Present')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Present' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>Present</button>
+                       <button onClick={() => handleStatusChange(student.enrollment_id, 'Present')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Present' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>Present</button>
                       <button onClick={() => handleStatusChange(student.enrollment_id, 'Late')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Late' ? 'bg-amber-500 text-white shadow-md' : 'text-gray-500 hover:text-amber-600 hover:bg-amber-50'}`}>Late</button>
                       <button onClick={() => handleStatusChange(student.enrollment_id, 'Absent')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Absent' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'}`}>Absent</button>
                       <button onClick={() => handleStatusChange(student.enrollment_id, 'Excused')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Excused' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}>Excused</button>
@@ -218,10 +215,22 @@ const Attendance = () => {
           <h1 className="text-3xl font-serif font-bold text-[#1A1C29]">Attendance</h1>
           <p className="text-gray-500 mt-1">Track and manage student attendance</p>
         </div>
-        <button onClick={() => setIsTakingAttendance(true)} className="flex items-center space-x-2 bg-amber-400 hover:bg-amber-500 text-[#1A1C29] px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm text-sm">
-          <Plus size={18} /><span>Take Attendance</span>
-        </button>
+        {!isArchived && (
+          <button onClick={() => setIsTakingAttendance(true)} className="flex items-center space-x-2 bg-amber-400 hover:bg-amber-500 text-[#1A1C29] px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm text-sm">
+            <Plus size={18} /><span>Take Attendance</span>
+          </button>
+        )}
       </div>
+
+      {isArchived && (
+        <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
+          <span className="text-xl">🔒</span>
+          <div>
+            <p className="font-bold text-sm text-blue-900">Archived Record</p>
+            <p className="text-xs text-blue-700">This school year is closed. Attendance records are locked.</p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white p-4 rounded-t-2xl border border-gray-100 flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-4 flex-1">

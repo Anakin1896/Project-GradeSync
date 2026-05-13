@@ -12,6 +12,9 @@ const Settings = () => {
     grading_system: '75 (CHED)',
     language: 'English (PH)'
   });
+  
+  const [initialSchoolYear, setInitialSchoolYear] = useState('');
+  
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState({ text: '', type: '' });
 
@@ -43,7 +46,10 @@ const Settings = () => {
       fetch('http://127.0.0.1:8000/api/grading/grading-templates/', { headers: getAuthHeaders() }).then(res => res.ok ? res.json() : [])
     ])
     .then(([settingsData, templatesData]) => {
-      if (settingsData && Object.keys(settingsData).length > 0) setSettings(settingsData);
+      if (settingsData && Object.keys(settingsData).length > 0) {
+        setSettings(settingsData);
+        setInitialSchoolYear(settingsData.active_school_year || '');
+      }
       setTemplates(templatesData);
       setIsLoading(false);
     })
@@ -69,6 +75,41 @@ const Settings = () => {
     setIsSavingSettings(true);
     setSettingsMessage({ text: '', type: '' });
 
+    if (settings.active_school_year !== initialSchoolYear) {
+      const confirmTransition = window.confirm(
+        `WARNING: You are changing the active school year from ${initialSchoolYear || 'the current year'} to ${settings.active_school_year}.\n\nThis will permanently lock the old school year records and promote all students to the next grade level. Are you absolutely sure you want to proceed?`
+      );
+
+      if (!confirmTransition) {
+        
+        setSettings(prev => ({ ...prev, active_school_year: initialSchoolYear }));
+        setIsSavingSettings(false);
+        return;
+      }
+
+      try {
+        const transitionRes = await fetch('http://127.0.0.1:8000/api/grading/transition-year/', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ new_year: settings.active_school_year })
+        });
+
+        if (!transitionRes.ok) {
+          const errData = await transitionRes.json();
+          setSettingsMessage({ text: errData.error || 'Failed to transition school year.', type: 'error' });
+          setIsSavingSettings(false);
+          return;
+        }
+
+        setInitialSchoolYear(settings.active_school_year);
+        
+      } catch (error) {
+        setSettingsMessage({ text: 'Network error during transition.', type: 'error' });
+        setIsSavingSettings(false);
+        return;
+      }
+    }
+    
     try {
       const response = await fetch('http://127.0.0.1:8000/api/accounts/settings/', {
         method: 'PATCH',
@@ -227,20 +268,6 @@ const Settings = () => {
                 <option value="75 (Standard)">75 (Standard)</option>
               </select>
             </div>
-
-            {/* <div className="flex items-center justify-between py-3 border-b border-gray-50">
-              <div>
-                <h3 className="font-bold text-[#1A1C29] text-sm">Language</h3>
-                <p className="text-sm text-gray-500 mt-0.5">Interface language</p>
-              </div>
-              <select 
-                name="language" value={settings.language} onChange={handleSettingsChange}
-                className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-[#1A1C29] focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 cursor-pointer min-w-35"
-              >
-                <option value="English (PH)">English (PH)</option>
-                <option value="Tagalog">Tagalog</option>
-              </select>
-            </div> */}
 
             <div className="pt-4 flex items-center gap-4">
               <button 

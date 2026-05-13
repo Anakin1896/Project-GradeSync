@@ -62,6 +62,7 @@ const Grades = () => {
   const template = selectedClass?.grading_template || null;
   const periods = template?.items || [];
   const hasTemplate = periods.length > 0;
+  const isArchived = selectedClass?.is_active === false;
 
   const getPeriodGrade = (enrollment, templateItem) => {
     if (!enrollment.period_grades) return null;
@@ -89,7 +90,6 @@ const Grades = () => {
   const handleWeightPeriodChange = (e) => {
     const newPeriodId = e.target.value;
     setSelectedWeightPeriod(newPeriodId);
-    
     fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/?period_id=${newPeriodId}`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => setComponents(data))
@@ -137,7 +137,6 @@ const Grades = () => {
     setBreakdownInfo({ student: enrollment.student, period: period });
     setIsBreakdownModalOpen(true);
     setIsLoadingBreakdown(true);
-
     fetch(`http://127.0.0.1:8000/api/grading/student-breakdown/${selectedClassId}/${enrollment.student.student_number}/${period.name}/`, { 
       headers: getAuthHeaders() 
     })
@@ -147,7 +146,8 @@ const Grades = () => {
   };
 
   const calculateProjectedFinal = (enrollment) => {
-    let finalScore = 0; let totalWeightApplied = 0; let hasGrades = false;
+    let finalScore = 0; let totalWeightApplied = 0;
+    let hasGrades = false;
     periods.forEach(p => {
       const grade = getPeriodGrade(enrollment, p);
       if (grade !== '--') {
@@ -171,7 +171,7 @@ const Grades = () => {
     setManualRemarks(enrollment.remarks || projected.remarks);
     setIsGradeModalOpen(true);
   };
-  
+
   const closeGradeModal = () => { setIsGradeModalOpen(false); setSelectedEnrollment(null); };
 
   const handleSaveGrade = async (e) => {
@@ -226,7 +226,6 @@ const Grades = () => {
       ];
       csvRows.push(row.join(","));
     });
-
     const csvString = csvRows.join("\n");
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -251,7 +250,8 @@ const Grades = () => {
         </div>
 
         <div className="flex gap-3">
-          <button onClick={openWeightsModal} disabled={!hasTemplate} className="flex items-center space-x-2 bg-white border border-gray-200 hover:border-amber-500 hover:text-amber-600 disabled:opacity-50 text-gray-600 px-5 py-2.5 rounded-lg font-bold transition-all shadow-sm text-sm">
+          <button 
+            onClick={openWeightsModal} disabled={!hasTemplate || isArchived} className="flex items-center space-x-2 bg-white border border-gray-200 hover:border-amber-500 hover:text-amber-600 disabled:opacity-50 text-gray-600 px-5 py-2.5 rounded-lg font-bold transition-all shadow-sm text-sm">
             <Settings size={18} /><span>Setup Weights</span>
           </button>
           <button onClick={handleExportGrades} disabled={!hasTemplate} className="flex items-center space-x-2 bg-white border border-gray-200 hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 text-gray-600 px-5 py-2.5 rounded-lg font-bold transition-all shadow-sm text-sm">
@@ -259,6 +259,16 @@ const Grades = () => {
           </button>
         </div>
       </div>
+
+      {isArchived && (
+        <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
+          <span className="text-xl">🔒</span>
+          <div>
+            <p className="font-bold text-sm text-blue-900">Archived Record</p>
+            <p className="text-xs text-blue-700">This school year is closed. Grades are for viewing only and cannot be edited.</p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white p-4 rounded-t-2xl border border-gray-100 flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center space-x-3 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
@@ -303,7 +313,6 @@ const Grades = () => {
                   <tr><td colSpan={periods.length + 4} className="p-12 text-center text-gray-500 font-medium">No students enrolled in this class yet.</td></tr>
                 ) : (
                   currentClassStudents.map((e) => {
-                    
                     const hasAllPeriodGrades = periods.length > 0 && periods.every(p => getPeriodGrade(e, p) !== '--');
                     const hasSavedFinal = e.final_grade !== null && e.final_grade !== undefined;
                     
@@ -345,9 +354,11 @@ const Grades = () => {
                           <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold border ${remarkColor}`}>{displayRemarks}</span>
                         </td>
                         <td className="p-4 text-right">
-                          <button onClick={() => openGradeModal(e)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-lg transition-colors border border-amber-200">
-                            <Edit3 size={14} /><span>Finalize</span>
-                          </button>
+                          {!isArchived && (
+                            <button onClick={() => openGradeModal(e)} className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-lg transition-colors border border-amber-200">
+                              <Edit3 size={14} /><span>Finalize</span>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -484,7 +495,7 @@ const Grades = () => {
               </div>
               <h3 className="text-xl font-serif font-bold text-[#1A1C29] mb-2">Delete Category?</h3>
               <p className="text-sm text-gray-500 mb-6">
-                Are you sure you want to delete <span className="font-bold text-[#1A1C29]">"{componentToDelete.name}"</span>? 
+                Are you sure you want to delete <span className="font-bold text-[#1A1C29]">"{componentToDelete.name}"</span>?
                 This will permanently delete all activities and grades associated with it.
               </p>
               <div className="flex gap-3">
@@ -647,7 +658,7 @@ const Grades = () => {
 
               <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
                 <button type="button" onClick={closeGradeModal} disabled={isSavingGrade} className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-500 bg-white border border-gray-200 hover:bg-gray-100 hover:text-gray-700 transition-colors">
-                  Cancel
+                   Cancel
                 </button>
                 <button type="submit" disabled={isSavingGrade} className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 text-[#1A1C29] transition-colors shadow-sm">
                   {isSavingGrade ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}

@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from .models import Notification, Event, Assessment
 from django.db.models import Avg, Max, Min
+from django.db import transaction
 from urllib.parse import unquote
 from .models import (
     ClassSchedule, TeacherSchedule, Enrollment, Attendance, 
@@ -115,7 +116,8 @@ class DashboardView(APIView):
                 "time": time_str,
                 "room": getattr(s, 'room', 'TBA'),
                 "grading_template_id": s.grading_template.id if s.grading_template else "",
-                "grading_template": template_data
+                "grading_template": template_data,
+                "is_active": s.term.is_active if s.term else True
             })
 
         teacher_name = f"{user.first_name} {user.last_name}".strip()
@@ -356,6 +358,9 @@ class ClassActivitiesView(APIView):
         
         if not schedule:
              return Response({'error': 'Class not found'}, status=404)
+        
+        if schedule.term and not schedule.term.is_active:
+            return Response({'error': 'This school year is archived and can no longer be edited.'}, status=403)
 
         period_name = data.get('period')
         if not period_name:
@@ -429,6 +434,9 @@ class ActivityScoringView(APIView):
 
         if not enrollment or not assessment:
             return Response({'error': 'Invalid data'}, status=400)
+        
+        if enrollment.class_field.term and not enrollment.class_field.term.is_active:
+            return Response({'error': 'This school year is archived and can no longer be edited.'}, status=403)
 
         if raw_score == '' or raw_score is None:
             StudentScore.objects.filter(assessment=assessment, enrollment=enrollment).delete()
@@ -533,6 +541,9 @@ class ClassAttendanceView(APIView):
 
         if not enrollment:
             return Response({'error': 'Invalid enrollment'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if enrollment.class_field.term and not enrollment.class_field.term.is_active:
+            return Response({'error': 'This school year is archived and can no longer be edited.'}, status=403)
 
         Attendance.objects.update_or_create(
             enrollment=enrollment,
@@ -633,6 +644,9 @@ class ScheduleManageView(APIView):
             schedule = ClassSchedule.objects.get(class_id=schedule_id, teacher=request.user)
         except ClassSchedule.DoesNotExist:
             return Response({'error': 'Schedule not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        if schedule.term and not schedule.term.is_active:
+            return Response({'error': 'This school year is archived and can no longer be edited.'}, status=403)
 
         data = request.data
         
@@ -867,3 +881,47 @@ class NotificationView(APIView):
     def post(self, request):
         Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
         return Response({"message": "Notifications marked as read"})
+    
+class TransitionSchoolYearView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        new_year_name = request.data.get('new_year')
+        
+        if not new_year_name:
+            return Response({'error': 'New school year name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+
+            with transaction.atomic(): 
+
+                current_term = AcademicTerm.objects.filter(is_active=True).first()
+                if current_term:
+                    current_term.is_active = False
+                    current_term.save()
+
+                AcademicTerm.objects.create(
+                    school_year=new_year_name,
+                    start_date=date.today(),
+                    end_date=date.today(),
+                    is_active=True
+                )
+
+                students = Student.objects.all()
+                for student in students:
+
+                    if getattr(student.program, 'code', '') == 'K-12' and student.current_year_level == 12:
+                        pass 
+
+                    elif getattr(student.program, 'code', '') == 'College' and student.current_year_level == 4:
+                        pass 
+
+                    else:
+                        student.current_year_level += 1
+                    
+                    student.save()
+
+            return Response({"message": f"Successfully transitioned to {new_year_name}!"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

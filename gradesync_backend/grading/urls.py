@@ -29,5 +29,6 @@ urlpatterns = [
     path('class-components/<str:class_id>/', views.ClassComponentsView.as_view(), name='class-components'),
     path('student-breakdown/<str:class_id>/<str:student_number>/<str:period_name>/', views.StudentPeriodBreakdownView.as_view(), name='student-breakdown'),
     path('notifications/', views.NotificationView.as_view(), name='notifications'),
+    path('transition-year/', views.TransitionSchoolYearView.as_view(), name='transition_year'),
     path('', include(router.urls)),
 ]

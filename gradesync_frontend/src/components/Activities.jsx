@@ -4,7 +4,6 @@ import { BookOpen, Plus, Loader2, X, Save, ChevronLeft, CheckCircle2, AlertCircl
 const Activities = () => {
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
-  
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
@@ -14,7 +13,6 @@ const Activities = () => {
   const [formData, setFormData] = useState({
     title: '', type: 'Quiz', period: '', perfect_score: 100, date: ''
   });
-
   const [gradingActivity, setGradingActivity] = useState(null);
   const [rosterScores, setRosterScores] = useState([]);
   const [isLoadingRoster, setIsLoadingRoster] = useState(false);
@@ -28,6 +26,7 @@ const Activities = () => {
   const templatePeriods = selectedClass?.grading_template?.items || [];
   const transmutationBase = selectedClass?.grading_template ? Number(selectedClass.grading_template.transmutation_base) : 60;
   const multiplier = 100 - transmutationBase;
+  const isArchived = selectedClass?.is_active === false;
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() })
@@ -37,7 +36,7 @@ const Activities = () => {
           const teacherClasses = data.classes.map(cls => ({
             id: cls.id.toString(),
             name: `${cls.subject} — ${cls.section}`,
-            grading_template: cls.grading_template
+            grading_template: cls.grading_template 
           }));
           
           setClasses(teacherClasses);
@@ -72,7 +71,7 @@ const Activities = () => {
       if (response.ok) {
         setIsModalOpen(false);
         setFormData({ title: '', type: 'Quiz', period: templatePeriods.length > 0 ? templatePeriods[0].name : '', perfect_score: 100, date: '' });
-        fetchActivities(); 
+        fetchActivities();
       }
     } catch (err) { console.error(err); } finally { setIsSaving(false); }
   };
@@ -83,7 +82,6 @@ const Activities = () => {
     const numPerf = parseFloat(perfectScore);
     
     if (numPerf <= 0) return '--';
-
     let transmuted = (numRaw / numPerf) * multiplier + transmutationBase;
     transmuted = Math.max(transmutationBase, Math.min(100, transmuted));
     
@@ -93,7 +91,6 @@ const Activities = () => {
   const openGradingPanel = (activity) => {
     setGradingActivity(activity);
     setIsLoadingRoster(true);
-    
     fetch(`http://127.0.0.1:8000/api/grading/activity-scores/${activity.id}/`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
@@ -108,7 +105,6 @@ const Activities = () => {
     setRosterScores(prev => prev.map(s => 
       s.student_number === studentNumber ? { ...s, raw_score: newValue, saveStatus: 'saving' } : s
     ));
-
     fetch(`http://127.0.0.1:8000/api/grading/activity-scores/${gradingActivity.id}/`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -197,13 +193,14 @@ const Activities = () => {
                             min="0"
                             max={gradingActivity.perfect_score}
                             value={student.raw_score}
+                            disabled={isArchived}
                             onChange={(e) => {
                               setRosterScores(prev => prev.map(s => 
                                 s.student_number === student.student_number ? { ...s, raw_score: e.target.value } : s
                               ));
                             }}
                             onBlur={(e) => handleScoreChange(student.student_number, e.target.value)}
-                            className="w-24 px-3 py-2 text-right bg-white border border-gray-200 rounded-lg font-bold text-[#1A1C29] focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 shadow-sm"
+                            className="w-24 px-3 py-2 text-right bg-white border border-gray-200 rounded-lg font-bold text-[#1A1C29] focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             placeholder="--"
                           />
                         </div>
@@ -241,7 +238,7 @@ const Activities = () => {
     if (activeTab === 'Activities' && (a.type === 'Activity' || a.type === 'Project' || a.type === 'Recitation' || a.type === 'Attendance')) return true;
     return false;
   });
-  
+
   const groupedActivities = filteredActivities.reduce((acc, current) => {
     if (!acc[current.period]) acc[current.period] = [];
     acc[current.period].push(current);
@@ -256,22 +253,34 @@ const Activities = () => {
           <h1 className="text-3xl font-serif font-bold text-[#1A1C29]">Activities</h1>
           <p className="text-gray-500 mt-1">Manage quizzes, exams, and class activities</p>
         </div>
-        <button 
-          onClick={() => {
-            setFormData({
-              title: '', 
-              type: 'Quiz', 
-              period: templatePeriods.length > 0 ? templatePeriods[0].name : '', 
-              perfect_score: 100, 
-              date: ''
-            });
-            setIsModalOpen(true);
-          }} 
-          className="flex items-center space-x-2 bg-amber-400 hover:bg-amber-500 text-[#1A1C29] px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm text-sm"
-        >
-          <Plus size={18} /><span>Add Activity</span>
-        </button>
+        {!isArchived && (
+          <button 
+            onClick={() => {
+              setFormData({
+                title: '', 
+                type: 'Quiz', 
+                period: templatePeriods.length > 0 ? templatePeriods[0].name : '', 
+                perfect_score: 100, 
+                date: ''
+              });
+              setIsModalOpen(true);
+            }} 
+            className="flex items-center space-x-2 bg-amber-400 hover:bg-amber-500 text-[#1A1C29] px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm text-sm"
+          >
+            <Plus size={18} /><span>Add Activity</span>
+          </button>
+        )}
       </div>
+
+      {isArchived && (
+        <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
+          <span className="text-xl">🔒</span>
+          <div>
+            <p className="font-bold text-sm text-blue-900">Archived Record</p>
+            <p className="text-xs text-blue-700">This school year is closed. Activities are for viewing only.</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center space-x-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm w-fit mb-8">
         <div className="bg-amber-50 p-1.5 rounded-lg text-amber-600"><BookOpen size={18} /></div>
@@ -321,9 +330,8 @@ const Activities = () => {
                     if (item.type === 'Quiz') badgeColor = "bg-blue-50 text-blue-600 font-bold";
                     if (item.type === 'Activity') badgeColor = "bg-emerald-50 text-emerald-600 font-bold";
                     if (item.type === 'Exam') badgeColor = "bg-purple-50 text-purple-600 font-bold";
-                    if (item.type === 'Project') badgeColor = "bg-orange-50 text-orange-600 font-bold"; 
-                    if (item.type === 'Recitation' || item.type === 'Attendance') badgeColor = "bg-pink-50 text-pink-600 font-bold"; 
-
+                    if (item.type === 'Project') badgeColor = "bg-orange-50 text-orange-600 font-bold";
+                    if (item.type === 'Recitation' || item.type === 'Attendance') badgeColor = "bg-pink-50 text-pink-600 font-bold";
                     return (
                       <tr key={item.id} onClick={() => openGradingPanel(item)} className="hover:bg-amber-50/30 transition-colors cursor-pointer group">
                         <td className="p-4 font-bold text-[#1A1C29] text-sm group-hover:text-amber-600 transition-colors flex items-center gap-2">
