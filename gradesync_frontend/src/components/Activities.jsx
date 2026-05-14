@@ -30,6 +30,9 @@ const Activities = () => {
   const isArchived = selectedClass?.is_active === false;
 
   useEffect(() => {
+
+    const jumpId = localStorage.getItem('jumpToClassId');
+
     fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
@@ -43,15 +46,12 @@ const Activities = () => {
           }));
           
           const activeClasses = teacherClasses.filter(c => c.is_active);
-          const jumpId = localStorage.getItem('jumpToClassId');
           
           if (jumpId) {
             const archivedClass = teacherClasses.find(c => c.id === jumpId);
             setClasses(archivedClass ? [...activeClasses, archivedClass] : activeClasses);
             setSelectedClassId(jumpId);
-
-            localStorage.removeItem('jumpToClassId');
-
+            localStorage.removeItem('jumpToClassId'); 
           } else {
             setClasses(activeClasses);
             if (activeClasses.length > 0) {
@@ -66,7 +66,10 @@ const Activities = () => {
   }, []);
 
   const fetchActivities = () => {
-    if (!selectedClassId) return;
+    if (!selectedClassId) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     fetch(`http://127.0.0.1:8000/api/grading/class-activities/${selectedClassId}/`, { headers: getAuthHeaders() })
       .then(res => res.json())
@@ -198,7 +201,6 @@ const Activities = () => {
               ) : (
                 rosterScores.map(student => {
                   const weighted = calculateWeightedScore(student.raw_score, gradingActivity.perfect_score);
-                  
                   return (
                     <tr key={student.student_number} className="hover:bg-gray-50/50 transition-colors group">
                       <td className="p-4">
@@ -299,7 +301,7 @@ const Activities = () => {
         <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
           <span className="text-xl">🔒</span>
           <div>
-            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name || selectedClassData?.term_name}</p>
+            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name}</p>
             <p className="text-xs text-blue-700">This school year is closed. Data is for viewing only and cannot be edited.</p>
           </div>
         </div>
@@ -336,7 +338,6 @@ const Activities = () => {
         Object.entries(groupedActivities).map(([period, items]) => (
           <div key={period} className="mb-8">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 pl-2">{period}</h3>
-            
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -358,6 +359,7 @@ const Activities = () => {
                     if (item.type === 'Exam') badgeColor = "bg-purple-50 text-purple-600 font-bold";
                     if (item.type === 'Project') badgeColor = "bg-orange-50 text-orange-600 font-bold";
                     if (item.type === 'Recitation' || item.type === 'Attendance') badgeColor = "bg-pink-50 text-pink-600 font-bold";
+                    
                     return (
                       <tr key={item.id} onClick={() => openGradingPanel(item)} className="hover:bg-amber-50/30 transition-colors cursor-pointer group">
                         <td className="p-4 font-bold text-[#1A1C29] text-sm group-hover:text-amber-600 transition-colors flex items-center gap-2">

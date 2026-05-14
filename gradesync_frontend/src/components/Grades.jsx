@@ -33,23 +33,22 @@ const Grades = () => {
 
   const fetchData = () => {
     setIsLoading(true);
+  
+    const jumpId = localStorage.getItem('jumpToClassId');
+
     Promise.all([
       fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() }).then(res => res.json()),
       fetch('http://127.0.0.1:8000/api/grading/enrollments/', { headers: getAuthHeaders() }).then(res => res.json())
     ])
     .then(([dashData, enrollData]) => {
       if (dashData.classes) {
-
         const activeClasses = dashData.classes.filter(c => c.is_active === true);
-        const jumpId = localStorage.getItem('jumpToClassId');
         
         if (jumpId) {
           const archivedToView = dashData.classes.find(c => c.id.toString() === jumpId);
           setClasses(archivedToView ? [...activeClasses, archivedToView] : activeClasses);
           setSelectedClassId(jumpId);
-
-          localStorage.removeItem('jumpToClassId');
-
+          localStorage.removeItem('jumpToClassId'); 
         } else {
           setClasses(activeClasses);
           if (activeClasses.length > 0) {
@@ -279,7 +278,7 @@ const Grades = () => {
         <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
           <span className="text-xl">🔒</span>
           <div>
-            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name}</p>
+            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name || selectedClass?.school_year}</p>
             <p className="text-xs text-blue-700">This school year is closed. Data is for viewing only and cannot be edited.</p>
           </div>
         </div>
@@ -290,7 +289,7 @@ const Grades = () => {
           <div className="bg-white p-1.5 rounded shadow-sm text-amber-500"><BookOpen size={18} /></div>
           <select value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)} className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:ring-0 cursor-pointer pr-8 py-1 focus:outline-none">
             {classes.length === 0 ?
-              <option value="">No classes available</option> : classes.map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
+              <option value="">No classes available</option> : classes.map(cls => <option key={cls.id} value={cls.id}>{cls.subject} — {cls.section}</option>)}
           </select>
         </div>
         <div className="relative w-72">
@@ -306,7 +305,7 @@ const Grades = () => {
           <h3 className="text-xl font-bold text-[#1A1C29]">No Grading Template Assigned</h3>
           <p className="text-gray-500 mt-2 max-w-md">To view the gradebook, this class needs a grading rule set. Go to the <b>Dashboard</b>, edit this class, and assign a Grading Template from the dropdown.</p>
         </div>
-       ) : (
+        ) : (
         <div className="bg-white border-x border-b border-gray-100 rounded-b-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-200">
@@ -337,7 +336,7 @@ const Grades = () => {
                     
                     let displayFinalGrade = '--';
                     let displayRemarks = 'No Grade';
-                     
+                    
                     if (hasSavedFinal) {
                       displayFinalGrade = Number(e.final_grade).toFixed(2);
                       displayRemarks = e.remarks || 'No Grade';
@@ -514,8 +513,7 @@ const Grades = () => {
               </div>
               <h3 className="text-xl font-serif font-bold text-[#1A1C29] mb-2">Delete Category?</h3>
               <p className="text-sm text-gray-500 mb-6">
-                Are you sure you want to delete <span className="font-bold text-[#1A1C29]">"{componentToDelete.name}"</span>?
-                This will permanently delete all activities and grades associated with it.
+                Are you sure you want to delete <span className="font-bold text-[#1A1C29]">"{componentToDelete.name}"</span>? This will permanently delete all activities and grades associated with it.
               </p>
               <div className="flex gap-3">
                 <button 

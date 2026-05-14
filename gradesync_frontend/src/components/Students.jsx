@@ -4,27 +4,33 @@ import { Search, Users, Loader2, UserPlus, X, Save, ArrowLeft, Database, Trash2,
 const Students = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [rosterFilterProgram, setRosterFilterProgram] = useState('');
   const [rosterFilterYear, setRosterFilterYear] = useState('');
   const [rosterFilterSection, setRosterFilterSection] = useState('');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStep, setModalStep] = useState('selection'); 
   const [eduType, setEduType] = useState(''); 
   
   const [isSaving, setIsSaving] = useState(false);
+
   const [unenrollModalData, setUnenrollModalData] = useState(null);
   const [isUnenrolling, setIsUnenrolling] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState('');
+
   const [formData, setFormData] = useState({
     student_number: '', first_name: '', last_name: '', sex: 'F', email: '', 
     program: '', current_year_level: 1, section: '', subject: '' 
   });
+
   const [availableStudents, setAvailableStudents] = useState([]);
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [programs, setPrograms] = useState([]); 
   const [isFetchingGlobal, setIsFetchingGlobal] = useState(false);
+
   const [searchExisting, setSearchExisting] = useState('');
 
   const [filterProgram, setFilterProgram] = useState('');
@@ -41,10 +47,30 @@ const Students = () => {
   };
 
   const fetchStudents = () => {
-    fetch('http://127.0.0.1:8000/api/grading/enrollments/', { method: 'GET', headers: getAuthHeaders() })
-      .then(res => res.json())
-      .then(data => { setEnrollments(data); setIsLoading(false); })
-      .catch(err => { console.error("Failed to fetch:", err); setIsLoading(false); });
+    setIsLoading(true);
+
+    Promise.all([
+      fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() }).then(res => res.json()),
+      fetch('http://127.0.0.1:8000/api/grading/enrollments/', { headers: getAuthHeaders() }).then(res => res.json())
+    ])
+    .then(([dashData, enrollData]) => {
+     
+      let activeClassIds = [];
+      if (dashData.classes) {
+        activeClassIds = dashData.classes.filter(c => c.is_active === true).map(c => c.id);
+      }
+
+      const activeEnrollments = enrollData.filter(e => 
+        e.class_field && activeClassIds.includes(e.class_field.class_id)
+      );
+
+      setEnrollments(activeEnrollments);
+      setIsLoading(false);
+    })
+    .catch(err => {
+      console.error("Failed to fetch:", err);
+      setIsLoading(false);
+    });
   };
 
   const fetchSubjectsAndPrograms = () => {
@@ -76,6 +102,7 @@ const Students = () => {
   const fetchGlobalStudents = () => {
     setIsFetchingGlobal(true);
     setModalStep('existing');
+
     fetch('http://127.0.0.1:8000/api/grading/available-students/', { method: 'GET', headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { setAvailableStudents(data); setIsFetchingGlobal(false); })
@@ -85,12 +112,14 @@ const Students = () => {
   const handleEnroll = async (studentData) => {
     setIsSaving(true);
     setErrorMessage('');
+
     try {
       const response = await fetch('http://127.0.0.1:8000/api/grading/quick-enroll/', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(studentData)
       });
+
       if (response.ok) {
         closeModal();
         fetchStudents();
@@ -108,10 +137,12 @@ const Students = () => {
   const confirmUnenroll = async () => {
     if (!unenrollModalData) return;
     setIsUnenrolling(true);
+
     try {
       const response = await fetch(`http://127.0.0.1:8000/api/grading/enrollments/${unenrollModalData.id}/`, {
         method: 'DELETE', headers: getAuthHeaders()
       });
+
       if (response.ok) {
         setEnrollments(prev => prev.filter(e => e.enrollment_id !== unenrollModalData.id));
         setUnenrollModalData(null);
@@ -122,6 +153,7 @@ const Students = () => {
 
   const handleNewStudentSubmit = (e) => {
     e.preventDefault();
+
     if (!formData.section) {
         showError("Please type or select a Section/Block in the header above.");
         return;
@@ -134,15 +166,18 @@ const Students = () => {
     setModalStep('selection');
     setEduType('');
     setErrorMessage('');
+
     setFormData(prev => ({ 
         ...prev, student_number: '', first_name: '', last_name: '', sex: 'F', email: '', 
         program: programs.length > 0 ? programs[0].code : '', current_year_level: 1, section: '' 
     }));
+
     setSearchExisting(''); setFilterProgram(''); setFilterYear('');
   };
 
   const handleBackNavigation = () => {
     setErrorMessage('');
+
     if (modalStep === 'existing' || modalStep === 'new_edu') setModalStep('selection');
     else if (modalStep === 'new_year') setModalStep('new_edu');
     else if (modalStep === 'new_form') setModalStep('new_year');
@@ -158,7 +193,7 @@ const Students = () => {
     const yearLevel = String(e.student?.current_year_level || '');
     const matchesYear = rosterFilterYear === '' || yearLevel === rosterFilterYear;
     const rawSectionName = e.class_field?.section?.name || '';
-    
+ 
     let sectionName = rawSectionName;
     if (programCode && !rawSectionName.includes(programCode)) sectionName = `${programCode} ${rawSectionName}`;
     const matchesSection = rosterFilterSection === '' || sectionName.includes(rosterFilterSection);
@@ -196,13 +231,14 @@ const Students = () => {
             <option value="">All Programs</option>
             {programs.map(p => <option key={p.code} value={p.code}>{p.code}</option>)}
           </select>
+     
           <select value={rosterFilterYear} onChange={(e) => setRosterFilterYear(e.target.value)} className="w-40 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-amber-400">
             <option value="">All Levels</option>
             
             <optgroup label="Elementary (Grades 1-6)">
               {[1, 2, 3, 4, 5, 6].map(y => <option key={`elem-${y}`} value={y}>Grade {y}</option>)}
             </optgroup>
-            
+   
             <optgroup label="Junior High (Grades 7-10)">
               {[7, 8, 9, 10].map(y => <option key={`jhs-${y}`} value={y}>Grade {y}</option>)}
             </optgroup>
@@ -250,6 +286,7 @@ const Students = () => {
               ) : (
                 filteredRoster.map((e) => {
                   const subjectCode = e.class_field?.subject?.code || 'N/A';
+                 
                   let sectionName = e.class_field?.section?.name || 'N/A';
                   const programCode = e.student?.program?.code || ''; 
                   if (programCode && !sectionName.includes(programCode)) sectionName = `${programCode} ${sectionName}`;
@@ -268,6 +305,7 @@ const Students = () => {
                         <div className="text-xs text-gray-500 mt-0.5">{sectionName}</div>
                       </td>
                       <td className="p-4"><span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">Enrolled</span></td>
+                   
                       <td className="p-4 text-right">
                         <button onClick={() => setUnenrollModalData({ id: e.enrollment_id, name: `${e.student.first_name} ${e.student.last_name}` })} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
                           <Trash2 size={18} />
@@ -409,7 +447,7 @@ const Students = () => {
                             </div>
 
                             <button onClick={() => {
-                                if(!formData.section) { showError("Please type or select a Section/Block in the header above."); return;}
+                               if(!formData.section) { showError("Please type or select a Section/Block in the header above."); return;}
                                 handleEnroll({ ...student, subject: formData.subject, section: formData.section })
                             }} disabled={isSaving} className="px-4 py-1.5 bg-amber-100 hover:bg-amber-400 text-amber-900 font-bold text-sm rounded-lg transition-colors flex items-center gap-2">
                               {isSaving ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />} Enroll
@@ -466,6 +504,7 @@ const Students = () => {
                         <input type="email" name="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold focus:outline-none focus:border-amber-400" />
                       </div>
                     </div>
+                 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 tracking-wider mb-1.5">FIRST NAME *</label>

@@ -20,6 +20,9 @@ const Attendance = () => {
   });
 
   useEffect(() => {
+
+    const jumpId = localStorage.getItem('jumpToClassId');
+
     fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
@@ -33,15 +36,12 @@ const Attendance = () => {
           }));
           
           const activeClasses = teacherClasses.filter(c => c.is_active);
-          const jumpId = localStorage.getItem('jumpToClassId');
           
           if (jumpId) {
             const archivedClass = teacherClasses.find(c => c.id === jumpId);
             setClasses(archivedClass ? [...activeClasses, archivedClass] : activeClasses);
             setSelectedClassId(jumpId);
-
             localStorage.removeItem('jumpToClassId');
-
           } else {
             setClasses(activeClasses);
             if (activeClasses.length > 0) {
@@ -182,7 +182,7 @@ const Attendance = () => {
                 (
                 <tr><td colSpan="3" className="p-12 text-center text-gray-400"><Loader2 className="animate-spin mx-auto mb-2" size={32} /></td></tr>
               ) : dailyRoster.map(student => {
-                if (!student) return null;
+                if (!student) return null; 
                 return (
                 <tr key={student.enrollment_id} className="hover:bg-gray-50/30 transition-colors">
                   <td className="p-4">
@@ -191,10 +191,10 @@ const Attendance = () => {
                   </td>
                   <td className="p-4 text-center">
                     <div className="inline-flex rounded-lg shadow-sm p-1 bg-gray-50 border border-gray-200 gap-1">
-                      <button disabled={isArchived} onClick={() => handleStatusChange(student.enrollment_id, 'Present')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Present' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>Present</button>
-                      <button disabled={isArchived} onClick={() => handleStatusChange(student.enrollment_id, 'Late')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Late' ? 'bg-amber-500 text-white shadow-md' : 'text-gray-500 hover:text-amber-600 hover:bg-amber-50'}`}>Late</button>
-                      <button disabled={isArchived} onClick={() => handleStatusChange(student.enrollment_id, 'Absent')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Absent' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'}`}>Absent</button>
-                      <button disabled={isArchived} onClick={() => handleStatusChange(student.enrollment_id, 'Excused')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Excused' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}>Excused</button>
+                      <button onClick={() => handleStatusChange(student.enrollment_id, 'Present')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Present' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>Present</button>
+                      <button onClick={() => handleStatusChange(student.enrollment_id, 'Late')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Late' ? 'bg-amber-500 text-white shadow-md' : 'text-gray-500 hover:text-amber-600 hover:bg-amber-50'}`}>Late</button>
+                      <button onClick={() => handleStatusChange(student.enrollment_id, 'Absent')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Absent' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'}`}>Absent</button>
+                      <button onClick={() => handleStatusChange(student.enrollment_id, 'Excused')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Excused' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}>Excused</button>
                     </div>
                   </td>
                   <td className="p-4 text-center">
@@ -252,7 +252,7 @@ const Attendance = () => {
         <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
           <span className="text-xl">🔒</span>
           <div>
-            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClassData?.term_name || selectedClass?.term_name}</p>
+            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name || selectedClassData?.term_name}</p>
             <p className="text-xs text-blue-700">This school year is closed. Data is for viewing only and cannot be edited.</p>
           </div>
         </div>
