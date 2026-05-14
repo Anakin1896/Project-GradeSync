@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, BookOpen, Edit3, FileSpreadsheet, Loader2, 
-  X, Save, Calculator, AlertCircle, Settings, Plus } from 'lucide-react';
+import { Search, BookOpen, Edit3, FileSpreadsheet, Loader2, X, Save, Calculator, AlertCircle, Settings, Plus } from 'lucide-react';
 
 const Grades = () => {
   const [classes, setClasses] = useState([]);
@@ -16,7 +15,6 @@ const Grades = () => {
 
   const [manualFinal, setManualFinal] = useState('');
   const [manualRemarks, setManualRemarks] = useState('');
-
   const [isWeightsModalOpen, setIsWeightsModalOpen] = useState(false);
   const [components, setComponents] = useState([]);
   const [isSavingWeights, setIsSavingWeights] = useState(false);
@@ -41,8 +39,25 @@ const Grades = () => {
     ])
     .then(([dashData, enrollData]) => {
       if (dashData.classes) {
-        setClasses(dashData.classes);
-        if (dashData.classes.length > 0) setSelectedClassId(dashData.classes[0].id.toString());
+
+        const activeClasses = dashData.classes.filter(c => c.is_active === true);
+        const jumpId = localStorage.getItem('jumpToClassId');
+        
+        if (jumpId) {
+          const archivedToView = dashData.classes.find(c => c.id.toString() === jumpId);
+          setClasses(archivedToView ? [...activeClasses, archivedToView] : activeClasses);
+          setSelectedClassId(jumpId);
+
+          localStorage.removeItem('jumpToClassId');
+
+        } else {
+          setClasses(activeClasses);
+          if (activeClasses.length > 0) {
+            setSelectedClassId(activeClasses[0].id.toString());
+          } else {
+            setSelectedClassId('');
+          }
+        }
       }
       setEnrollments(enrollData);
       setIsLoading(false);
@@ -264,7 +279,7 @@ const Grades = () => {
         <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
           <span className="text-xl">🔒</span>
           <div>
-            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name || selectedClassData?.term_name}</p>
+            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name}</p>
             <p className="text-xs text-blue-700">This school year is closed. Data is for viewing only and cannot be edited.</p>
           </div>
         </div>
@@ -274,7 +289,8 @@ const Grades = () => {
         <div className="flex items-center space-x-3 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
           <div className="bg-white p-1.5 rounded shadow-sm text-amber-500"><BookOpen size={18} /></div>
           <select value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)} className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:ring-0 cursor-pointer pr-8 py-1 focus:outline-none">
-            {classes.length === 0 ? <option value="">No classes available</option> : classes.map(cls => <option key={cls.id} value={cls.id}>{cls.subject} — {cls.section}</option>)}
+            {classes.length === 0 ?
+              <option value="">No classes available</option> : classes.map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
           </select>
         </div>
         <div className="relative w-72">
@@ -283,13 +299,14 @@ const Grades = () => {
         </div>
       </div>
 
-      {!hasTemplate && !isLoading ? (
+      {!hasTemplate && !isLoading ?
+        (
         <div className="bg-white border-x border-b border-gray-100 rounded-b-2xl p-16 flex flex-col items-center justify-center text-center">
           <AlertCircle className="text-amber-500 mb-4" size={48} />
           <h3 className="text-xl font-bold text-[#1A1C29]">No Grading Template Assigned</h3>
           <p className="text-gray-500 mt-2 max-w-md">To view the gradebook, this class needs a grading rule set. Go to the <b>Dashboard</b>, edit this class, and assign a Grading Template from the dropdown.</p>
         </div>
-      ) : (
+       ) : (
         <div className="bg-white border-x border-b border-gray-100 rounded-b-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-200">
@@ -307,9 +324,11 @@ const Grades = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {isLoading ? (
+                {isLoading ?
+                  (
                   <tr><td colSpan={periods.length + 4} className="p-12 text-center text-gray-500"><Loader2 className="animate-spin mx-auto mb-2" size={28} />Loading gradebook...</td></tr>
-                ) : currentClassStudents.length === 0 ? (
+                ) : currentClassStudents.length === 0 ?
+                  (
                   <tr><td colSpan={periods.length + 4} className="p-12 text-center text-gray-500 font-medium">No students enrolled in this class yet.</td></tr>
                 ) : (
                   currentClassStudents.map((e) => {
@@ -318,7 +337,7 @@ const Grades = () => {
                     
                     let displayFinalGrade = '--';
                     let displayRemarks = 'No Grade';
-                    
+                     
                     if (hasSavedFinal) {
                       displayFinalGrade = Number(e.final_grade).toFixed(2);
                       displayRemarks = e.remarks || 'No Grade';
@@ -538,9 +557,11 @@ const Grades = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
-              {isLoadingBreakdown ? (
+              {isLoadingBreakdown ?
+                (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400"><Loader2 className="animate-spin mb-4" size={32} /> Loading data...</div>
-              ) : breakdownData.length === 0 ? (
+              ) : breakdownData.length === 0 ?
+                (
                 <div className="text-center text-gray-500 py-10 font-medium">No activities recorded for this period yet.</div>
               ) : (
                 <div className="space-y-6">

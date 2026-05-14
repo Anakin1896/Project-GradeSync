@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -10,6 +9,7 @@ import Activities from './components/Activities';
 import Attendance from './components/Attendance';
 import Settings from './components/Settings';
 import NotificationBell from './components/NotificationBell';
+import DataHistory from './components/DataHistory';
 
 function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -49,9 +49,15 @@ function App() {
     }
 
     const handleSyUpdate = (e) => setSchoolYear(e.detail);
+    const handleTabChange = (e) => setActiveTab(e.detail);
+
     window.addEventListener('schoolYearUpdated', handleSyUpdate);
+    window.addEventListener('changeTab', handleTabChange);
     
-    return () => window.removeEventListener('schoolYearUpdated', handleSyUpdate);
+    return () => {
+      window.removeEventListener('schoolYearUpdated', handleSyUpdate);
+      window.removeEventListener('changeTab', handleTabChange);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -69,33 +75,26 @@ function App() {
       case 'Activities': return <Activities />;
       case 'Attendance': return <Attendance />;
       case 'Settings': return <Settings />;
-      default:
-        return (
-          <div className="mt-8">
-            <h1 className="text-3xl font-serif font-bold text-[#1A1C29]">{activeTab}</h1>
-            <p className="text-gray-500 mt-2">The {activeTab} content will be built here next!</p>
-          </div>
-        );
+      case 'Data History': return <DataHistory />;
+      default: return <Dashboard />;
     }
   };
 
   const token = localStorage.getItem('auth_token');
-  if (!token) { return <Login />; }
+  if (!token) return <Login />;
 
   return (
     <div className="flex h-screen bg-[#FCFBF8] font-sans">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} handleLogout={handleLogout} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        
         <header className="flex justify-end items-center px-10 py-6 shrink-0">
           <div className="flex items-center space-x-4">
-            <div className="px-4 py-1.5 rounded-full border border-amber-200 bg-amber-50 text-amber-800 text-sm font-medium transition-all">
+            <div className="px-4 py-1.5 rounded-full border border-amber-200 bg-amber-50 text-amber-800 text-sm font-medium">
               {schoolYear}
             </div>
             <NotificationBell />
           </div>
         </header>
-
         <main className="flex-1 overflow-x-hidden overflow-y-auto px-10 pb-10">
           {renderContent()}
         </main>

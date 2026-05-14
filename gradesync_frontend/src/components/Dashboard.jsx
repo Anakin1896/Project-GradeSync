@@ -13,6 +13,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
   const [formData, setFormData] = useState({
     subject: '', title: '', section: 'Block A', room: '', time: '', days: [], grading_template_id: '' 
   });
@@ -65,6 +66,7 @@ const Dashboard = () => {
 
   const handleAddEvent = async (e) => {
     e.preventDefault();
+
     if (!newEventText || !newEventDate) return;
     
     try {
@@ -73,6 +75,7 @@ const Dashboard = () => {
         headers: getAuthHeaders(),
         body: JSON.stringify({ text: newEventText, date: newEventDate })
       });
+
       if (response.ok) {
         setNewEventText('');
         setNewEventDate('');
@@ -87,6 +90,7 @@ const Dashboard = () => {
       const response = await fetch(`http://127.0.0.1:8000/api/grading/events/${id}/`, {
         method: 'DELETE', headers: getAuthHeaders()
       });
+
       if (response.ok) fetchEvents();
     } catch (err) { console.error(err); }
   };
@@ -109,23 +113,28 @@ const Dashboard = () => {
     setEditingId(cls.id);
     const dayArray = cls.days && cls.days !== 'TBA' ? cls.days.split(', ') : [];
     const templateId = cls.grading_template ? cls.grading_template.id : (cls.grading_template_id || '');
+
     setFormData({
       subject: cls.subject, title: cls.title, section: cls.section, room: cls.room !== 'TBA' ? cls.room : '', 
       time: cls.time !== 'TBA' ? cls.time : '', days: dayArray, grading_template_id: templateId
     });
+
     setIsModalOpen(true);
   };
 
   const handleDeleteClass = async (id) => {
     if (!window.confirm("Are you sure you want to delete this class schedule?")) return;
+
     try {
       const res = await fetch(`http://127.0.0.1:8000/api/grading/schedule/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
+
       if (res.ok) fetchData();
     } catch (err) { console.error(err); }
   };
 
   const handleSaveClass = async (e) => {
     e.preventDefault();
+
     if (formData.days.length === 0) {
       alert("Please select at least one day for this class.");
       return;
@@ -140,16 +149,19 @@ const Dashboard = () => {
 
     try {
       const response = await fetch(url, { method: method, headers: getAuthHeaders(), body: JSON.stringify(payload) });
+
       if (response.ok) {
         setIsModalOpen(false);
         fetchData(); 
       } else alert("Failed to save class.");
+
     } catch (err) { console.error(err); } finally { setIsSaving(false); }
   };
 
   const handleSubjectClick = (cls) => {
     setSelectedSubject(cls);
     setIsLoadingRoster(true);
+
     fetch('http://127.0.0.1:8000/api/grading/enrollments/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
@@ -177,9 +189,8 @@ const Dashboard = () => {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
     const todayNumber = currentDate.getDate();
-    
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
     
@@ -190,6 +201,7 @@ const Dashboard = () => {
 
     for (let i = 1; i <= daysInMonth; i++) {
       currentWeek.push(i);
+
       if (currentWeek.length === 7) {
         calendarGrid.push(currentWeek);
         currentWeek = [];
@@ -203,6 +215,7 @@ const Dashboard = () => {
 
     const hasEvent = (dayNum) => {
       if (!dayNum) return false;
+
       const cellDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
       return events.some(e => e.date === cellDateStr);
     };
@@ -214,8 +227,7 @@ const Dashboard = () => {
           {days.map(d => <div key={d} className="text-[11px] font-bold text-gray-400">{d}</div>)}
           
           {calendarGrid.flat().map((dateNum, i) => (
-            <div key={i} className={`text-sm font-semibold flex flex-col items-center justify-center h-8 w-8 mx-auto rounded-full relative
-              ${dateNum === todayNumber ? 'bg-amber-400 text-[#1A1C29] shadow-sm' : 'text-gray-600'}`}>
+            <div key={i} className={`text-sm font-semibold flex flex-col items-center justify-center h-8 w-8 mx-auto rounded-full relative ${dateNum === todayNumber ? 'bg-amber-400 text-[#1A1C29] shadow-sm' : 'text-gray-600'}`}>
               <span className="z-10">{dateNum}</span>
               {hasEvent(dateNum) && <span className="absolute bottom-1 w-1 h-1 bg-purple-500 rounded-full z-20"></span>}
             </div>
@@ -226,14 +238,16 @@ const Dashboard = () => {
   };
 
   if (isLoading || !dashboardData || !dashboardData.classes) {
-  return <div className="flex h-full items-center justify-center text-gray-400"><Loader2 className="animate-spin" size={40} /></div>;
-}
+    return <div className="flex h-full items-center justify-center text-gray-400"><Loader2 className="animate-spin" size={40} /></div>;
+  }
 
-  const { stats, classes, teacher_name, today_date } = dashboardData;
+  const { stats, teacher_name, today_date } = dashboardData;
+
+  const activeClasses = dashboardData.classes.filter(c => c.is_active === true);
   
-  const scheduledClasses = classes.filter(c => c.time && c.time !== 'TBA' && c.days && c.days !== 'TBA');
-  const unscheduledClasses = classes.filter(c => !c.time || c.time === 'TBA' || !c.days || c.days === 'TBA');
-  
+  const scheduledClasses = activeClasses.filter(c => c.time && c.time !== 'TBA' && c.days && c.days !== 'TBA');
+  const unscheduledClasses = activeClasses.filter(c => !c.time || c.time === 'TBA' || !c.days || c.days === 'TBA');
+
   const parseTimeForSort = (timeStr) => {
     if (!timeStr || timeStr === 'TBA') return 999999;
     const firstTime = timeStr.split('-')[0].trim();
@@ -251,7 +265,7 @@ const Dashboard = () => {
   };
 
   const uniqueTimes = [...new Set(scheduledClasses.map(c => c.time))].sort((a, b) => parseTimeForSort(a) - parseTimeForSort(b));
-
+  
   const filteredSubjects = availableSubjects.filter(sub => 
     sub.code.toLowerCase().includes(formData.subject.toLowerCase()) || 
     sub.title.toLowerCase().includes(formData.subject.toLowerCase())
@@ -264,6 +278,7 @@ const Dashboard = () => {
 
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
   const nextClass = todaysClasses.find(cls => parseTimeForSort(cls.time) > currentMinutes);
   const nextClassText = nextClass ? nextClass.time.split('-')[0].trim() : '--:--';
 
@@ -286,31 +301,36 @@ const Dashboard = () => {
 
       {activeTab === 'Overview' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+         
           <div className="grid grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm border-t-4 border-t-amber-400 relative">
               <Layers className="text-amber-400 mb-4" size={24} />
-              <h2 className="text-3xl font-bold text-[#1A1C29] mb-1">{stats.total_classes}</h2>
+              <h2 className="text-3xl font-bold text-[#1A1C29] mb-1">{activeClasses.length}</h2>
               <p className="text-sm font-bold text-[#1A1C29]">Subjects Handled</p>
               <p className="text-xs text-gray-400 mt-1">{todaysClasses.length} active today</p>
             </div>
+            
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm border-t-4 border-t-emerald-400 relative">
               <Users className="text-emerald-500 mb-4" size={24} />
               <h2 className="text-3xl font-bold text-[#1A1C29] mb-1">{stats.total_students}</h2>
               <p className="text-sm font-bold text-[#1A1C29]">Total Students</p>
               <p className="text-xs text-gray-400 mt-1">Across all sections</p>
             </div>
+            
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm border-t-4 border-t-blue-400 relative">
               <CalendarIcon className="text-blue-400 mb-4" size={24} />
               <h2 className="text-3xl font-bold text-[#1A1C29] mb-1">{todaysClasses.length}</h2>
               <p className="text-sm font-bold text-[#1A1C29]">Classes Today</p>
               <p className="text-xs text-gray-400 mt-1">Next: {nextClassText}</p>
             </div>
+            
             <div onClick={() => setIsEventModalOpen(true)} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm border-t-4 border-t-purple-400 relative cursor-pointer hover:shadow-md transition-shadow group">
               <CalendarDays className="text-purple-400 mb-4" size={24} />
               <h2 className="text-3xl font-bold text-[#1A1C29] mb-1">{events.length}</h2>
               <p className="text-sm font-bold text-[#1A1C29]">Upcoming Events</p>
               <div className="text-xs text-gray-400 mt-1 group-hover:text-purple-500 transition-colors flex items-center gap-1">
-                {events.length > 0 ? <span className="truncate">Next: {new Date(events[0].date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', timeZone: 'UTC'})}</span> : <span>Click to add event</span>}
+                {events.length > 0 ?
+                  <span className="truncate">Next: {new Date(events[0].date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', timeZone: 'UTC'})}</span> : <span>Click to add event</span>}
                 <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"/>
               </div>
             </div>
@@ -325,7 +345,8 @@ const Dashboard = () => {
                 </button>
               </div>
               <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-2">
-                {todaysClasses.length === 0 ? (
+                {todaysClasses.length === 0 ?
+                  (
                   <div className="flex-1 flex items-center justify-center text-gray-400 italic font-medium text-sm">No classes scheduled for today.</div>
                 ) : (
                   todaysClasses.map(cls => (
@@ -354,6 +375,7 @@ const Dashboard = () => {
           </div>
 
           <div className="overflow-x-auto pb-4 p-4">
+            
             <table className="w-full text-left border-collapse min-w-250">
               <thead>
                 <tr className="border-b border-gray-100">
@@ -364,7 +386,8 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {uniqueTimes.length === 0 && unscheduledClasses.length === 0 ? (
+                {uniqueTimes.length === 0 && unscheduledClasses.length === 0 ?
+                  (
                   <tr><td colSpan="8" className="p-16 text-center text-gray-400 italic font-medium">No classes scheduled.</td></tr>
                 ) : (
                   uniqueTimes.map((time, idx) => (
@@ -372,6 +395,7 @@ const Dashboard = () => {
                       <td className="p-4 font-semibold text-gray-500 text-[11px] whitespace-nowrap align-top pt-6 border-r border-gray-50/50">{time}</td>
                       {availableDays.map(day => {
                         const cls = scheduledClasses.find(c => c.time === time && c.days.includes(day));
+                        
                         return (
                           <td key={day} className="p-2 align-top border-r border-gray-50/50">
                             {cls ? (
@@ -422,17 +446,18 @@ const Dashboard = () => {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-8 animate-in slide-in-from-bottom-4 duration-300">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-serif font-bold text-[#1A1C29]">My Subjects & Blocks</h2>
-            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">Total: {classes.length}</span>
+            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">Total: {activeClasses.length}</span>
             <button onClick={openAddModal} className="flex items-center space-x-2 bg-amber-400 hover:bg-amber-500 text-[#1A1C29] px-4 py-2 rounded-lg font-bold transition-colors shadow-sm text-sm">
               <Plus size={16} /><span>Add Class</span>
             </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-            {classes.length === 0 ? (
-              <p className="text-gray-400 italic col-span-full text-center py-8">No subjects assigned yet.</p>
+            {activeClasses.length === 0 ? (
+              <p className="text-gray-400 italic col-span-full text-center py-8">No active subjects assigned yet.</p>
             ) : (
-              classes.map((cls, idx) => {
+              activeClasses.map((cls, idx) => {
                 const gradients = ['bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100', 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100', 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100', 'bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-100', 'bg-gradient-to-br from-rose-50 to-pink-50 border-rose-100'];
+      
                 return (
                   <div key={cls.id} onClick={() => handleSubjectClick(cls)} className={`p-6 rounded-2xl border hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-1 ${gradients[idx % gradients.length]}`}>
                     <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center mb-4 text-[#1A1C29]"><BookOpen size={20} /></div>
@@ -477,7 +502,8 @@ const Dashboard = () => {
               <tbody className="divide-y divide-gray-50">
                 {isLoadingRoster ? (
                   <tr><td colSpan="4" className="p-12 text-center text-gray-400"><Loader2 className="animate-spin mx-auto mb-2" size={32} /></td></tr>
-                ) : subjectStudents.length === 0 ? (
+                ) : subjectStudents.length === 0 ?
+                (
                   <tr><td colSpan="4" className="p-12 text-center text-gray-500 font-medium">No students enrolled.</td></tr>
                 ) : (
                   subjectStudents.map(e => (
@@ -499,7 +525,8 @@ const Dashboard = () => {
         <div className="fixed inset-0 bg-[#1A1C29]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
-              <h2 className="text-xl font-serif font-bold text-[#1A1C29]">{editingId ? 'Edit Class Schedule' : 'Schedule New Class'}</h2>
+              <h2 className="text-xl font-serif font-bold text-[#1A1C29]">{editingId ?
+                'Edit Class Schedule' : 'Schedule New Class'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:bg-gray-100 p-1.5 rounded-lg transition-colors"><X size={20} /></button>
             </div>
             
@@ -524,7 +551,8 @@ const Dashboard = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="relative">
                     <label className="block text-xs font-bold text-gray-500 tracking-wider mb-1.5">SUBJECT CODE *</label>
-                    <input type="text" required autoComplete="off" value={formData.subject} onChange={(e) => {setFormData({...formData, subject: e.target.value}); setShowSuggestions(true);}} onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} placeholder="Type to search..." className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold focus:border-amber-400 focus:outline-none" />
+                    <input type="text" required autoComplete="off" value={formData.subject} onChange={(e) => {setFormData({...formData, subject: e.target.value});
+                      setShowSuggestions(true);}} onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} placeholder="Type to search..." className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold focus:border-amber-400 focus:outline-none" />
                     {showSuggestions && formData.subject && filteredSubjects.length > 0 && (
                       <ul className="absolute z-50 w-[250%] left-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl">
                         {filteredSubjects.map(sub => (
@@ -535,6 +563,7 @@ const Dashboard = () => {
                       </ul>
                     )}
                   </div>
+  
                   <div>
                     <label className="block text-xs font-bold text-gray-500 tracking-wider mb-1.5">BLOCK / SECTION *</label>
                     <input type="text" required value={formData.section} onChange={(e) => setFormData({...formData, section: e.target.value})} placeholder="e.g. STEM-A" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold focus:border-amber-400 focus:outline-none" />
@@ -568,6 +597,7 @@ const Dashboard = () => {
                   <div className="flex flex-wrap gap-2">
                     {availableDays.map(day => {
                       const isSelected = formData.days.includes(day);
+                      
                       return (
                         <button key={day} type="button" onClick={() => handleDayToggle(day)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors border ${isSelected ? 'bg-amber-100 text-amber-700 border-amber-300 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
                           {day.substring(0, 3)}
@@ -608,7 +638,8 @@ const Dashboard = () => {
             </div>
             
             <div className="p-6 max-h-64 overflow-y-auto bg-white">
-                {events.length === 0 ? (
+                {events.length === 0 ?
+                (
                     <div className="text-center text-gray-400 italic text-sm py-8 border-2 border-dashed border-gray-100 rounded-xl">
                       No upcoming events.<br/>Add one below!
                     </div>

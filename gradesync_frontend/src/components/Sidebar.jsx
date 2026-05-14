@@ -7,7 +7,8 @@ import {
   CheckSquare, 
   User, 
   Settings, 
-  LogOut 
+  LogOut,
+  Archive 
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, handleLogout }) => {
@@ -20,6 +21,7 @@ const Sidebar = ({ activeTab, setActiveTab, handleLogout }) => {
     { name: 'Grades', icon: BarChart2 },
     { name: 'Activities', icon: ClipboardList },
     { name: 'Attendance', icon: CheckSquare },
+    { name: 'Data History', icon: Archive }, 
   ];
 
   const accountLinks = [
@@ -55,9 +57,7 @@ const Sidebar = ({ activeTab, setActiveTab, handleLogout }) => {
   };
 
   useEffect(() => {
-
     fetchProfile();
-
     window.addEventListener('profileUpdated', fetchProfile);
 
     return () => {

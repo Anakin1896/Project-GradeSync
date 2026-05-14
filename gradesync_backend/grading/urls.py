@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 
+
 router = DefaultRouter()
 router.register(r'grading-templates', views.GradingTemplateViewSet, basename='grading-template')
 router.register(r'period-grades', views.PeriodGradeViewSet, basename='period-grade')
@@ -30,5 +31,6 @@ urlpatterns = [
     path('student-breakdown/<str:class_id>/<str:student_number>/<str:period_name>/', views.StudentPeriodBreakdownView.as_view(), name='student-breakdown'),
     path('notifications/', views.NotificationView.as_view(), name='notifications'),
     path('transition-year/', views.TransitionSchoolYearView.as_view(), name='transition_year'),
+    path('data-history/', views.TeacherDataHistoryView.as_view(), name='teacher-data-history'),
     path('', include(router.urls)),
 ]

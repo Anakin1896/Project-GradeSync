@@ -928,3 +928,32 @@ class TransitionSchoolYearView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class TeacherDataHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        historical_classes = ClassSchedule.objects.filter(
+            teacher=user,
+            term__is_active=False
+        ).select_related('term', 'subject', 'section')
+
+        records = []
+        for c in historical_classes:
+            program_name = "Uncategorized"
+            if c.section and hasattr(c.section, 'program') and c.section.program:
+                program_name = c.section.program.code
+
+            records.append({
+                "id": c.class_id,
+                "subject": c.subject.title if c.subject else "TBA",
+                "code": c.subject.code if c.subject else "TBA",
+                "section": c.section.name if c.section else "TBA",
+                "program": program_name,
+                "school_year": c.term.school_year if c.term else "TBA",
+                "period": c.term.name or c.term.term_type if c.term else "TBA",
+            })
+
+        return Response({"records": records}, status=200)

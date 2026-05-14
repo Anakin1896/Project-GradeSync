@@ -32,8 +32,24 @@ const Attendance = () => {
             term_name: cls.term_name 
           }));
           
-          setClasses(teacherClasses);
-          if (teacherClasses.length > 0) setSelectedClassId(teacherClasses[0].id);
+          const activeClasses = teacherClasses.filter(c => c.is_active);
+          const jumpId = localStorage.getItem('jumpToClassId');
+          
+          if (jumpId) {
+            const archivedClass = teacherClasses.find(c => c.id === jumpId);
+            setClasses(archivedClass ? [...activeClasses, archivedClass] : activeClasses);
+            setSelectedClassId(jumpId);
+
+            localStorage.removeItem('jumpToClassId');
+
+          } else {
+            setClasses(activeClasses);
+            if (activeClasses.length > 0) {
+              setSelectedClassId(activeClasses[0].id);
+            } else {
+              setSelectedClassId('');
+            }
+          }
         }
       })
       .catch(err => console.error("Failed to load classes:", err));
@@ -78,13 +94,13 @@ const Attendance = () => {
       .catch(err => { console.error("Failed to fetch daily:", err); setIsLoading(false); });
   };
 
-  
   useEffect(() => {
     if (isTakingAttendance) fetchDaily();
     else fetchSummary();
   }, [selectedClassId, isTakingAttendance, selectedDate, selectedPeriod]);
 
   const handleStatusChange = (enrollmentId, newStatus) => {
+    if (isArchived) return; 
     setDailyRoster(prev => prev.map(s => s.enrollment_id === enrollmentId ? { ...s, status: newStatus, saveStatus: 'saving' } : s));
     fetch(`http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/`, {
       method: 'POST',
@@ -115,6 +131,7 @@ const Attendance = () => {
     const presentCount = dailyRoster.filter(s => s.status === 'Present').length;
     const lateCount = dailyRoster.filter(s => s.status === 'Late').length;
     const absentCount = dailyRoster.filter(s => s.status === 'Absent').length;
+
     return (
       <div className="max-w-6xl animate-in fade-in slide-in-from-bottom-8 duration-300 relative pb-10">
         <div className="flex justify-between items-center mb-6">
@@ -130,7 +147,8 @@ const Attendance = () => {
                 onChange={(e) => setSelectedPeriod(e.target.value)} 
                 className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:ring-0 cursor-pointer pr-4 focus:outline-none"
               >
-                {periods.length === 0 ? <option value="">No Periods</option> : periods.map(p => <option key={p.period} value={p.period}>{p.name}</option>)}
+                {periods.length === 0 ?
+                  <option value="">No Periods</option> : periods.map(p => <option key={p.period} value={p.period}>{p.name}</option>)}
               </select>
             </div>
 
@@ -160,9 +178,12 @@ const Attendance = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {isLoading ? (
+              {isLoading ?
+                (
                 <tr><td colSpan="3" className="p-12 text-center text-gray-400"><Loader2 className="animate-spin mx-auto mb-2" size={32} /></td></tr>
-              ) : dailyRoster.map(student => (
+              ) : dailyRoster.map(student => {
+                if (!student) return null;
+                return (
                 <tr key={student.enrollment_id} className="hover:bg-gray-50/30 transition-colors">
                   <td className="p-4">
                     <div className="font-bold text-[#1A1C29]">{student.last_name}, {student.first_name}</div>
@@ -170,10 +191,10 @@ const Attendance = () => {
                   </td>
                   <td className="p-4 text-center">
                     <div className="inline-flex rounded-lg shadow-sm p-1 bg-gray-50 border border-gray-200 gap-1">
-                       <button onClick={() => handleStatusChange(student.enrollment_id, 'Present')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Present' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>Present</button>
-                      <button onClick={() => handleStatusChange(student.enrollment_id, 'Late')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Late' ? 'bg-amber-500 text-white shadow-md' : 'text-gray-500 hover:text-amber-600 hover:bg-amber-50'}`}>Late</button>
-                      <button onClick={() => handleStatusChange(student.enrollment_id, 'Absent')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Absent' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'}`}>Absent</button>
-                      <button onClick={() => handleStatusChange(student.enrollment_id, 'Excused')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Excused' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}>Excused</button>
+                      <button disabled={isArchived} onClick={() => handleStatusChange(student.enrollment_id, 'Present')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Present' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>Present</button>
+                      <button disabled={isArchived} onClick={() => handleStatusChange(student.enrollment_id, 'Late')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Late' ? 'bg-amber-500 text-white shadow-md' : 'text-gray-500 hover:text-amber-600 hover:bg-amber-50'}`}>Late</button>
+                      <button disabled={isArchived} onClick={() => handleStatusChange(student.enrollment_id, 'Absent')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Absent' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'}`}>Absent</button>
+                      <button disabled={isArchived} onClick={() => handleStatusChange(student.enrollment_id, 'Excused')} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${student.status === 'Excused' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}>Excused</button>
                     </div>
                   </td>
                   <td className="p-4 text-center">
@@ -185,7 +206,7 @@ const Attendance = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
@@ -194,13 +215,16 @@ const Attendance = () => {
   }
 
   const filteredSummary = summaryData.students.filter(student => {
+    if (!student) return false; 
     const fullName = `${student.first_name} ${student.last_name}`.toLowerCase();
     const studentNum = (student.student_number || '').toLowerCase();
     return fullName.includes(searchTerm.toLowerCase()) || studentNum.includes(searchTerm.toLowerCase());
   });
 
   let totalPresent = 0; let totalLate = 0; let totalAbsent = 0; let totalExcused = 0;
+  
   summaryData.students.forEach(s => {
+    if (!s || !s.attendance) return; 
     Object.values(s.attendance).forEach(status => {
       if (status === 'Present') totalPresent++;
       if (status === 'Late') totalLate++;
@@ -228,7 +252,7 @@ const Attendance = () => {
         <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
           <span className="text-xl">🔒</span>
           <div>
-            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name || selectedClassData?.term_name}</p>
+            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClassData?.term_name || selectedClass?.term_name}</p>
             <p className="text-xs text-blue-700">This school year is closed. Data is for viewing only and cannot be edited.</p>
           </div>
         </div>
@@ -246,7 +270,8 @@ const Attendance = () => {
               }} 
               className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:ring-0 cursor-pointer pr-8 py-1 focus:outline-none"
             >
-              {classes.length === 0 ? <option value="">No classes available</option> : classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {classes.length === 0 ?
+                <option value="">No classes available</option> : classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
@@ -256,7 +281,8 @@ const Attendance = () => {
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="bg-transparent border-none text-sm font-bold text-gray-600 focus:ring-0 cursor-pointer pr-8 py-1 focus:outline-none"
             >
-              {periods.length === 0 ? (
+              {periods.length === 0 ?
+                (
                 <option value="">No Periods Assigned</option>
               ) : (
                 periods.map(p => <option key={p.period} value={p.period}>{p.name}</option>)
@@ -301,9 +327,11 @@ const Attendance = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {isLoading ? (
+            {isLoading ?
+              (
               <tr><td colSpan={summaryData.dates.length + 4} className="p-12 text-center text-gray-400"><Loader2 className="animate-spin mx-auto mb-2" size={32} /></td></tr>
-            ) : filteredSummary.length === 0 ? (
+            ) : filteredSummary.length === 0 ?
+              (
               <tr><td colSpan={summaryData.dates.length + 4} className="p-12 text-center text-gray-500 font-medium">No records found.</td></tr>
             ) : (
               filteredSummary.map(student => {
@@ -330,7 +358,6 @@ const Attendance = () => {
                 let rateColor = "bg-emerald-100 text-emerald-700";
                 if (rate < 85) rateColor = "bg-amber-100 text-amber-700";
                 if (rate < 75) rateColor = "bg-red-100 text-red-700";
-
                 return (
                   <tr key={student.enrollment_id} className="hover:bg-gray-50/30 transition-colors">
                     <td className="p-4 sticky left-0 bg-white border-r border-gray-100 z-10">

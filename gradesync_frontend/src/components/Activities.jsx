@@ -24,7 +24,8 @@ const Activities = () => {
 
   const selectedClass = classes.find(c => c.id.toString() === selectedClassId);
   const templatePeriods = selectedClass?.grading_template?.items || [];
-  const transmutationBase = selectedClass?.grading_template ? Number(selectedClass.grading_template.transmutation_base) : 60;
+  const transmutationBase = selectedClass?.grading_template ?
+    Number(selectedClass.grading_template.transmutation_base) : 60;
   const multiplier = 100 - transmutationBase;
   const isArchived = selectedClass?.is_active === false;
 
@@ -41,8 +42,24 @@ const Activities = () => {
             term_name: cls.term_name
           }));
           
-          setClasses(teacherClasses);
-          if (teacherClasses.length > 0) setSelectedClassId(teacherClasses[0].id);
+          const activeClasses = teacherClasses.filter(c => c.is_active);
+          const jumpId = localStorage.getItem('jumpToClassId');
+          
+          if (jumpId) {
+            const archivedClass = teacherClasses.find(c => c.id === jumpId);
+            setClasses(archivedClass ? [...activeClasses, archivedClass] : activeClasses);
+            setSelectedClassId(jumpId);
+
+            localStorage.removeItem('jumpToClassId');
+
+          } else {
+            setClasses(activeClasses);
+            if (activeClasses.length > 0) {
+              setSelectedClassId(activeClasses[0].id);
+            } else {
+              setSelectedClassId('');
+            }
+          }
         }
       })
       .catch(err => console.error("Failed to load classes:", err));
@@ -172,9 +189,11 @@ const Activities = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {isLoadingRoster ? (
+              {isLoadingRoster ?
+                (
                 <tr><td colSpan="4" className="p-12 text-center text-gray-400"><Loader2 className="animate-spin mx-auto mb-2" size={32} /></td></tr>
-              ) : rosterScores.length === 0 ? (
+              ) : rosterScores.length === 0 ?
+                (
                 <tr><td colSpan="4" className="p-12 text-center text-gray-500 font-medium">No students enrolled in this class yet.</td></tr>
               ) : (
                 rosterScores.map(student => {
@@ -198,7 +217,8 @@ const Activities = () => {
                             disabled={isArchived}
                             onChange={(e) => {
                               setRosterScores(prev => prev.map(s => 
-                                s.student_number === student.student_number ? { ...s, raw_score: e.target.value } : s
+                                s.student_number === student.student_number ?
+                                { ...s, raw_score: e.target.value } : s
                               ));
                             }}
                             onBlur={(e) => handleScoreChange(student.student_number, e.target.value)}
@@ -209,7 +229,8 @@ const Activities = () => {
                       </td>
 
                       <td className="p-4 text-center">
-                        <span className={`text-lg font-bold ${weighted === '--' ? 'text-gray-300' : 'text-[#1A1C29]'}`}>
+                        <span className={`text-lg font-bold ${weighted === '--' ?
+                          'text-gray-300' : 'text-[#1A1C29]'}`}>
                           {weighted}
                         </span>
                       </td>
@@ -290,7 +311,8 @@ const Activities = () => {
           value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}
           className="bg-transparent border-none text-sm font-bold text-[#1A1C29] focus:ring-0 cursor-pointer pr-8 py-1 focus:outline-none"
         >
-          {classes.length === 0 ? <option value="">No classes available</option> : classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {classes.length === 0 ?
+            <option value="">No classes available</option> : classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
 
@@ -302,9 +324,11 @@ const Activities = () => {
         ))}
       </div>
 
-      {isLoading ? (
+      {isLoading ?
+        (
         <div className="flex justify-center p-12 text-gray-400"><Loader2 className="animate-spin" size={32} /></div>
-      ) : Object.keys(groupedActivities).length === 0 ? (
+      ) : Object.keys(groupedActivities).length === 0 ?
+        (
         <div className="bg-white p-12 text-center rounded-2xl border border-gray-100 shadow-sm">
           <p className="text-gray-500 font-medium text-lg">No activities found for this tab.</p>
         </div>
@@ -391,7 +415,8 @@ const Activities = () => {
                       onChange={(e) => setFormData({...formData, period: e.target.value})} 
                       className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold focus:border-amber-400 focus:outline-none"
                     >
-                      {templatePeriods.length === 0 ? (
+                      {templatePeriods.length === 0 ?
+                        (
                         <option value="">No Template Assigned</option>
                       ) : (
                         templatePeriods.map((p, index) => (
