@@ -23,7 +23,7 @@ const Attendance = () => {
   useEffect(() => {
     const jumpId = localStorage.getItem('jumpToClassId');
 
-    fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() })
+    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/dashboard/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         if (data.classes) {
@@ -73,7 +73,7 @@ const Attendance = () => {
     
     const periodQuery = selectedPeriod ? `?period_id=${selectedPeriod}` : '';
     
-    fetch(`http://127.0.0.1:8000/api/grading/class-attendance-summary/${selectedClassId}/${periodQuery}`, { headers: getAuthHeaders() })
+    fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/class-attendance-summary/${selectedClassId}/${periodQuery}`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { setSummaryData(data); setIsLoading(false); })
       .catch(err => { console.error("Failed to fetch summary:", err); setIsLoading(false); });
@@ -84,7 +84,7 @@ const Attendance = () => {
     setIsLoading(true);
     const periodQuery = selectedPeriod ? `&period_id=${selectedPeriod}` : '';
 
-    fetch(`http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/?date=${selectedDate}${periodQuery}`, { headers: getAuthHeaders() })
+    fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/class-attendance/${selectedClassId}/?date=${selectedDate}${periodQuery}`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { 
         const dataWithStatus = data.map(student => ({ ...student, saveStatus: 'idle' }));
@@ -110,7 +110,7 @@ const Attendance = () => {
       status: newStatus,
       period_id: selectedPeriod
     };
-    const url = `http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/`;
+    const url = `https://gradesync-api-rx7d.onrender.com/api/grading/class-attendance/${selectedClassId}/`;
 
     const showSuccess = () => {
       setDailyRoster(prev => prev.map(s => s.enrollment_id === enrollmentId ? { ...s, saveStatus: 'saved' } : s));

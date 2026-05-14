@@ -16,8 +16,8 @@ const Settings = () => {
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
-      fetch('http://127.0.0.1:8000/api/accounts/settings/', { headers: getAuthHeaders() }).then(res => res.ok ? res.json() : {}),
-      fetch('http://127.0.0.1:8000/api/grading/grading-templates/', { headers: getAuthHeaders() }).then(res => res.ok ? res.json() : [])
+      fetch('https://gradesync-api-rx7d.onrender.com/api/accounts/settings/', { headers: getAuthHeaders() }).then(res => res.ok ? res.json() : {}),
+      fetch('https://gradesync-api-rx7d.onrender.com/api/grading/grading-templates/', { headers: getAuthHeaders() }).then(res => res.ok ? res.json() : [])
     ])
     .then(([settingsData, templatesData]) => {
       if (settingsData && Object.keys(settingsData).length > 0) {
@@ -33,7 +33,7 @@ const Settings = () => {
   const performNormalSave = async () => {
     setIsSavingSettings(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/accounts/settings/', { method: 'PATCH', headers: getAuthHeaders(), body: JSON.stringify(settings) });
+      const response = await fetch('https://gradesync-api-rx7d.onrender.com/api/accounts/settings/', { method: 'PATCH', headers: getAuthHeaders(), body: JSON.stringify(settings) });
       if (response.ok) {
         setSettingsMessage({ text: 'Settings saved successfully!', type: 'success' });
         setTimeout(() => setSettingsMessage({ text: '', type: '' }), 3000); 
@@ -49,7 +49,7 @@ const Settings = () => {
     setIsSavingSettings(true);
     
     try {
-      const transitionRes = await fetch('http://127.0.0.1:8000/api/grading/transition-year/', {
+      const transitionRes = await fetch('https://gradesync-api-rx7d.onrender.com/api/grading/transition-year/', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ new_year: settings.active_school_year })

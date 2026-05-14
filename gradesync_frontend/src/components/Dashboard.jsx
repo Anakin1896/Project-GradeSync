@@ -37,17 +37,17 @@ const Dashboard = () => {
   const fetchData = () => {
     setIsLoading(true);
 
-    fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() })
+    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/dashboard/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { setDashboardData(data); setIsLoading(false); })
       .catch(err => { console.error(err); setIsLoading(false); });
 
-    fetch('http://127.0.0.1:8000/api/grading/available-subjects/', { headers: getAuthHeaders() })
+    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/available-subjects/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => setAvailableSubjects(data))
       .catch(err => console.error(err));
 
-    fetch('http://127.0.0.1:8000/api/grading/grading-templates/', { headers: getAuthHeaders() })
+    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/grading-templates/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => setAvailableTemplates(data))
       .catch(err => console.error(err));
@@ -56,7 +56,7 @@ const Dashboard = () => {
   };
 
   const fetchEvents = () => {
-    fetch('http://127.0.0.1:8000/api/grading/events/', { headers: getAuthHeaders() })
+    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/events/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => setEvents(data))
       .catch(err => console.error("Failed to fetch events", err));
@@ -70,7 +70,7 @@ const Dashboard = () => {
     if (!newEventText || !newEventDate) return;
     
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/grading/events/', {
+      const response = await fetch('https://gradesync-api-rx7d.onrender.com/api/grading/events/', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ text: newEventText, date: newEventDate })
@@ -87,7 +87,7 @@ const Dashboard = () => {
 
   const handleDeleteEvent = async (id) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/grading/events/${id}/`, {
+      const response = await fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/events/${id}/`, {
         method: 'DELETE', headers: getAuthHeaders()
       });
 
@@ -126,7 +126,7 @@ const Dashboard = () => {
     if (!window.confirm("Are you sure you want to delete this class schedule?")) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/grading/schedule/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
+      const res = await fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/schedule/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
 
       if (res.ok) fetchData();
     } catch (err) { console.error(err); }
@@ -141,7 +141,7 @@ const Dashboard = () => {
     }
 
     setIsSaving(true);
-    const url = editingId ? `http://127.0.0.1:8000/api/grading/schedule/${editingId}/` : 'http://127.0.0.1:8000/api/grading/dashboard/';
+    const url = editingId ? `https://gradesync-api-rx7d.onrender.com/api/grading/schedule/${editingId}/` : 'https://gradesync-api-rx7d.onrender.com/api/grading/dashboard/';
     const method = editingId ? 'PUT' : 'POST';
 
     const payload = { ...formData };
@@ -162,7 +162,7 @@ const Dashboard = () => {
     setSelectedSubject(cls);
     setIsLoadingRoster(true);
 
-    fetch('http://127.0.0.1:8000/api/grading/enrollments/', { headers: getAuthHeaders() })
+    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/enrollments/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         const enrolled = data.filter(e => e.class_field && e.class_field.class_id === cls.id);

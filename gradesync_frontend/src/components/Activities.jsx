@@ -33,7 +33,7 @@ const Activities = () => {
 
     const jumpId = localStorage.getItem('jumpToClassId');
 
-    fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() })
+    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/dashboard/', { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         if (data.classes) {
@@ -71,7 +71,7 @@ const Activities = () => {
       return;
     }
     setIsLoading(true);
-    fetch(`http://127.0.0.1:8000/api/grading/class-activities/${selectedClassId}/`, { headers: getAuthHeaders() })
+    fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/class-activities/${selectedClassId}/`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { setActivities(data); setIsLoading(false); })
       .catch(err => { console.error(err); setIsLoading(false); });
@@ -87,7 +87,7 @@ const Activities = () => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/grading/class-activities/${selectedClassId}/`, {
+      const response = await fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/class-activities/${selectedClassId}/`, {
         method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(formData)
       });
       if (response.ok) {
@@ -113,7 +113,7 @@ const Activities = () => {
   const openGradingPanel = (activity) => {
     setGradingActivity(activity);
     setIsLoadingRoster(true);
-    fetch(`http://127.0.0.1:8000/api/grading/activity-scores/${activity.id}/`, { headers: getAuthHeaders() })
+    fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/activity-scores/${activity.id}/`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         const rosterWithStatus = data.map(s => ({ ...s, saveStatus: 'idle' }));
@@ -127,7 +127,7 @@ const Activities = () => {
     setRosterScores(prev => prev.map(s => 
       s.student_number === studentNumber ? { ...s, raw_score: newValue, saveStatus: 'saving' } : s
     ));
-    fetch(`http://127.0.0.1:8000/api/grading/activity-scores/${gradingActivity.id}/`, {
+    fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/activity-scores/${gradingActivity.id}/`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ student_number: studentNumber, raw_score: newValue })
