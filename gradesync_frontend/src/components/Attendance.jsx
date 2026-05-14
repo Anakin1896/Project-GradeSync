@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Search, Loader2, CalendarDays, CheckCircle2, AlertCircle, Plus, ChevronLeft } from 'lucide-react';
+import { addToSyncQueue } from '../syncManager';
 
 const Attendance = () => {
   const [classes, setClasses] = useState([]);
@@ -20,7 +21,6 @@ const Attendance = () => {
   });
 
   useEffect(() => {
-
     const jumpId = localStorage.getItem('jumpToClassId');
 
     fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() })
@@ -99,26 +99,47 @@ const Attendance = () => {
     else fetchSummary();
   }, [selectedClassId, isTakingAttendance, selectedDate, selectedPeriod]);
 
-  const handleStatusChange = (enrollmentId, newStatus) => {
+  const handleStatusChange = async (enrollmentId, newStatus) => {
     if (isArchived) return; 
+
     setDailyRoster(prev => prev.map(s => s.enrollment_id === enrollmentId ? { ...s, status: newStatus, saveStatus: 'saving' } : s));
-    fetch(`http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ 
-        enrollment_id: enrollmentId, 
-        date: selectedDate, 
-        status: newStatus,
-        period_id: selectedPeriod
-      })
-    })
-    .then(res => {
+    
+    const payload = { 
+      enrollment_id: enrollmentId, 
+      date: selectedDate, 
+      status: newStatus,
+      period_id: selectedPeriod
+    };
+    const url = `http://127.0.0.1:8000/api/grading/class-attendance/${selectedClassId}/`;
+
+    const showSuccess = () => {
+      setDailyRoster(prev => prev.map(s => s.enrollment_id === enrollmentId ? { ...s, saveStatus: 'saved' } : s));
+      setTimeout(() => setDailyRoster(current => current.map(s => s.enrollment_id === enrollmentId ? { ...s, saveStatus: 'idle' } : s)), 2000);
+    };
+
+    if (!navigator.onLine) {
+      await addToSyncQueue(url, 'POST', payload);
+      showSuccess();
+      return;
+    }
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload)
+      });
+      
       if (res.ok) {
-        setDailyRoster(prev => prev.map(s => s.enrollment_id === enrollmentId ? { ...s, saveStatus: 'saved' } : s));
-        setTimeout(() => setDailyRoster(current => current.map(s => s.enrollment_id === enrollmentId ? { ...s, saveStatus: 'idle' } : s)), 2000);
-      } else throw new Error("Failed");
-    })
-    .catch(() => setDailyRoster(prev => prev.map(s => s.enrollment_id === enrollmentId ? { ...s, saveStatus: 'error' } : s)));
+        showSuccess();
+      } else {
+        throw new Error("Failed");
+      }
+    } catch (error) {
+
+      await addToSyncQueue(url, 'POST', payload);
+      showSuccess();
+    }
   };
 
   const formatHeaderDate = (dateStr) => {

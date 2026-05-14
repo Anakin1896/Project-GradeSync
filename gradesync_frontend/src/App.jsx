@@ -10,6 +10,7 @@ import Attendance from './components/Attendance';
 import Settings from './components/Settings';
 import NotificationBell from './components/NotificationBell';
 import DataHistory from './components/DataHistory';
+import { processSyncQueue } from './syncManager';
 
 function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -58,6 +59,21 @@ function App() {
       window.removeEventListener('schoolYearUpdated', handleSyUpdate);
       window.removeEventListener('changeTab', handleTabChange);
     };
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log("Back online! Syncing data...");
+      processSyncQueue();
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    if (navigator.onLine) {
+      processSyncQueue();
+    }
+
+    return () => window.removeEventListener('online', handleOnline);
   }, []);
 
   const handleLogout = () => {

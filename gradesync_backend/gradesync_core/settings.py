@@ -26,7 +26,12 @@ SECRET_KEY = 'django-insecure-h51#4kp6c0%3kc+ftoq#65s*c2n0smhoxecu1ltp$wa-^-p$0q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'gradesync-api.onrender.com', 
+    '.railway.app'
+]
 
 
 # Application definition
@@ -136,6 +141,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:4173",
     "http://127.0.0.1:4173",
+    "https://gradesync.vercel.app",
 ]
 
 REST_FRAMEWORK = {
