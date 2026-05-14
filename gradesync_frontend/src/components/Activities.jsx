@@ -276,8 +276,8 @@ const Activities = () => {
         <div className="bg-blue-50 border border-blue-200 px-5 py-3 rounded-xl mb-6 flex items-center gap-3 shadow-sm animate-in slide-in-from-top-2">
           <span className="text-xl">🔒</span>
           <div>
-            <p className="font-bold text-sm text-blue-900">Archived Record</p>
-            <p className="text-xs text-blue-700">This school year is closed. Activities are for viewing only.</p>
+            <p className="font-bold text-sm text-blue-900">Archived Record: {selectedClass?.term_name || selectedClassData?.term_name}</p>
+            <p className="text-xs text-blue-700">This school year is closed. Data is for viewing only and cannot be edited.</p>
           </div>
         </div>
       )}

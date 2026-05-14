@@ -117,7 +117,8 @@ class DashboardView(APIView):
                 "room": getattr(s, 'room', 'TBA'),
                 "grading_template_id": s.grading_template.id if s.grading_template else "",
                 "grading_template": template_data,
-                "is_active": s.term.is_active if s.term else True
+                "is_active": s.term.is_active if s.term else True,
+                "term_name": f"{s.term.school_year} — {s.term.name or s.term.term_type}" if s.term else "TBA"
             })
 
         teacher_name = f"{user.first_name} {user.last_name}".strip()
