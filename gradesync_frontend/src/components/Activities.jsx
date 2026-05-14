@@ -36,7 +36,9 @@ const Activities = () => {
           const teacherClasses = data.classes.map(cls => ({
             id: cls.id.toString(),
             name: `${cls.subject} — ${cls.section}`,
-            grading_template: cls.grading_template 
+            grading_template: cls.grading_template,
+            is_active: cls.is_active,
+            term_name: cls.term_name
           }));
           
           setClasses(teacherClasses);

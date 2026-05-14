@@ -1,6 +1,6 @@
 from core.models import Program, Subject, AcademicTerm, Period
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from students.models import Student
 from students.models import Student, Section
 from core.models import Period
@@ -887,42 +887,44 @@ class TransitionSchoolYearView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        new_year_name = request.data.get('new_year')
+        new_year_input = request.data.get('new_year')
         
-        if not new_year_name:
+        if not new_year_input:
             return Response({'error': 'New school year name is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
+        if " — " in new_year_input:
+            sy_val, name_val = new_year_input.split(" — ", 1)
+        elif " - " in new_year_input:
+            sy_val, name_val = new_year_input.split(" - ", 1)
+        else:
+            sy_val, name_val = new_year_input, None
 
+        try:
             with transaction.atomic(): 
 
-                current_term = AcademicTerm.objects.filter(is_active=True).first()
-                if current_term:
-                    current_term.is_active = False
-                    current_term.save()
+                AcademicTerm.objects.filter(is_active=True).update(is_active=False)
 
                 AcademicTerm.objects.create(
-                    school_year=new_year_name,
+                    school_year=sy_val.strip(),
+                    name=name_val.strip() if name_val else None,
+                    term_type='Semester',
                     start_date=date.today(),
-                    end_date=date.today(),
+                    end_date=date.today() + timedelta(days=150),
                     is_active=True
                 )
 
                 students = Student.objects.all()
                 for student in students:
-
                     if getattr(student.program, 'code', '') == 'K-12' and student.current_year_level == 12:
                         pass 
-
                     elif getattr(student.program, 'code', '') == 'College' and student.current_year_level == 4:
                         pass 
-
                     else:
                         student.current_year_level += 1
                     
                     student.save()
 
-            return Response({"message": f"Successfully transitioned to {new_year_name}!"}, status=status.HTTP_200_OK)
+            return Response({"message": f"Successfully transitioned to {new_year_input}!"}, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

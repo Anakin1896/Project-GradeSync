@@ -27,6 +27,11 @@ class AcademicTerm(models.Model):
 
     def __str__(self):
         return f"{self.school_year} - {self.name or self.term_type}"
+    
+    def save(self, *args, **kwargs):
+        if self.is_active:
+            AcademicTerm.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
 
 class Program(models.Model):
     program_id = models.AutoField(primary_key=True)
