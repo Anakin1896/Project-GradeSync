@@ -30,7 +30,7 @@ const Login = () => {
     setErrorMsg('');
 
     try {
-      const response = await fetch('https://gradesync-api-rx7d.onrender.com/api/token/', {
+      const response = await fetch('http://127.0.0.1:8000/api/token/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: employeeId, password: password })
@@ -42,7 +42,7 @@ const Login = () => {
         localStorage.setItem('auth_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
 
-        const profileResponse = await fetch('https://gradesync-api-rx7d.onrender.com/api/accounts/profile/', {
+        const profileResponse = await fetch('http://127.0.0.1:8000/api/accounts/profile/', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${data.access}` }
         });
@@ -80,7 +80,7 @@ const Login = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('https://gradesync-api-rx7d.onrender.com/api/accounts/change-password/', {
+      const response = await fetch('http://127.0.0.1:8000/api/accounts/change-password/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

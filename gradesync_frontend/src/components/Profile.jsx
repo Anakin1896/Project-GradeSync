@@ -24,7 +24,7 @@ const Profile = () => {
       return;
     }
 
-    fetch('https://gradesync-api-rx7d.onrender.com/api/accounts/profile/', {
+    fetch('http://127.0.0.1:8000/api/accounts/profile/', {
       method: 'GET',
       headers: getAuthHeaders(),
     })
@@ -64,7 +64,7 @@ const Profile = () => {
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch('https://gradesync-api-rx7d.onrender.com/api/accounts/profile/', {
+      const response = await fetch('http://127.0.0.1:8000/api/accounts/profile/', {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify(editForm)

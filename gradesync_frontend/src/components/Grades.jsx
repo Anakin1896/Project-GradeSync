@@ -37,8 +37,8 @@ const Grades = () => {
     const jumpId = localStorage.getItem('jumpToClassId');
 
     Promise.all([
-      fetch('https://gradesync-api-rx7d.onrender.com/api/grading/dashboard/', { headers: getAuthHeaders() }).then(res => res.json()),
-      fetch('https://gradesync-api-rx7d.onrender.com/api/grading/enrollments/', { headers: getAuthHeaders() }).then(res => res.json())
+      fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() }).then(res => res.json()),
+      fetch('http://127.0.0.1:8000/api/grading/enrollments/', { headers: getAuthHeaders() }).then(res => res.json())
     ])
     .then(([dashData, enrollData]) => {
       if (dashData.classes) {
@@ -92,7 +92,7 @@ const Grades = () => {
     setSelectedWeightPeriod(initialPeriod);
     
     if (initialPeriod) {
-      fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/class-components/${selectedClassId}/?period_id=${initialPeriod}`, { headers: getAuthHeaders() })
+      fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/?period_id=${initialPeriod}`, { headers: getAuthHeaders() })
         .then(res => res.json())
         .then(data => { setComponents(data); setIsWeightsModalOpen(true); })
         .catch(err => console.error(err));
@@ -104,7 +104,7 @@ const Grades = () => {
   const handleWeightPeriodChange = (e) => {
     const newPeriodId = e.target.value;
     setSelectedWeightPeriod(newPeriodId);
-    fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/class-components/${selectedClassId}/?period_id=${newPeriodId}`, { headers: getAuthHeaders() })
+    fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/?period_id=${newPeriodId}`, { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => setComponents(data))
       .catch(err => console.error(err));
@@ -112,7 +112,7 @@ const Grades = () => {
 
   const handleCopyWeights = async (sourcePeriodId) => {
     try {
-      const response = await fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/class-components/${selectedClassId}/?period_id=${sourcePeriodId}`, { 
+      const response = await fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/?period_id=${sourcePeriodId}`, { 
         headers: getAuthHeaders() 
       });
       if (response.ok) {
@@ -138,7 +138,7 @@ const Grades = () => {
 
     setIsSavingWeights(true);
     try {
-      const response = await fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/class-components/${selectedClassId}/`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/grading/class-components/${selectedClassId}/`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ period_id: selectedWeightPeriod, components }) 
@@ -151,7 +151,7 @@ const Grades = () => {
     setBreakdownInfo({ student: enrollment.student, period: period });
     setIsBreakdownModalOpen(true);
     setIsLoadingBreakdown(true);
-    fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/student-breakdown/${selectedClassId}/${enrollment.student.student_number}/${period.name}/`, { 
+    fetch(`http://127.0.0.1:8000/api/grading/student-breakdown/${selectedClassId}/${enrollment.student.student_number}/${period.name}/`, { 
       headers: getAuthHeaders() 
     })
       .then(res => res.json())
@@ -193,7 +193,7 @@ const Grades = () => {
     setIsSavingGrade(true);
     const payload = { final_grade: manualFinal || null, remarks: manualRemarks !== "No Grade" ? manualRemarks : null };
     try {
-      const response = await fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/enrollments/${selectedEnrollment.enrollment_id}/`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/grading/enrollments/${selectedEnrollment.enrollment_id}/`, {
         method: 'PATCH', headers: getAuthHeaders(), body: JSON.stringify(payload)
       });
       if (response.ok) {

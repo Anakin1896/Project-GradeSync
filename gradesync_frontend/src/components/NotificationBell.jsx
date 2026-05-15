@@ -10,7 +10,7 @@ const NotificationBell = () => {
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   useEffect(() => {
-    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/notifications/', {
+    fetch('http://127.0.0.1:8000/api/grading/notifications/', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
     })
     .then(res => res.json())
@@ -37,7 +37,7 @@ const NotificationBell = () => {
     setIsNotifOpen(!isNotifOpen);
     
     if (unreadCount > 0) {
-      fetch('https://gradesync-api-rx7d.onrender.com/api/grading/notifications/', {
+      fetch('http://127.0.0.1:8000/api/grading/notifications/', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
       }).catch(err => console.error(err));

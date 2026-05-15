@@ -39,7 +39,7 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (token) {
-      fetch('https://gradesync-api-rx7d.onrender.com/api/accounts/settings/', {
+      fetch('http://127.0.0.1:8000/api/accounts/settings/', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())

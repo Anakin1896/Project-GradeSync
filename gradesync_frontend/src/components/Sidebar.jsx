@@ -36,7 +36,7 @@ const Sidebar = ({ activeTab, setActiveTab, handleLogout }) => {
       return;
     }
 
-    fetch('https://gradesync-api-rx7d.onrender.com/api/accounts/profile/', {
+    fetch('http://127.0.0.1:8000/api/accounts/profile/', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

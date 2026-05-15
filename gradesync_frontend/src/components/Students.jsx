@@ -50,8 +50,8 @@ const Students = () => {
     setIsLoading(true);
 
     Promise.all([
-      fetch('https://gradesync-api-rx7d.onrender.com/api/grading/dashboard/', { headers: getAuthHeaders() }).then(res => res.json()),
-      fetch('https://gradesync-api-rx7d.onrender.com/api/grading/enrollments/', { headers: getAuthHeaders() }).then(res => res.json())
+      fetch('http://127.0.0.1:8000/api/grading/dashboard/', { headers: getAuthHeaders() }).then(res => res.json()),
+      fetch('http://127.0.0.1:8000/api/grading/enrollments/', { headers: getAuthHeaders() }).then(res => res.json())
     ])
     .then(([dashData, enrollData]) => {
      
@@ -74,7 +74,7 @@ const Students = () => {
   };
 
   const fetchSubjectsAndPrograms = () => {
-    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/available-subjects/', { method: 'GET', headers: getAuthHeaders() })
+    fetch('http://127.0.0.1:8000/api/grading/available-subjects/', { method: 'GET', headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { 
         setAvailableSubjects(data);
@@ -82,7 +82,7 @@ const Students = () => {
       })
       .catch(err => console.error("Failed to fetch subjects:", err));
 
-    fetch('https://gradesync-api-rx7d.onrender.com/api/core/programs/', { method: 'GET', headers: getAuthHeaders() })
+    fetch('http://127.0.0.1:8000/api/core/programs/', { method: 'GET', headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         setPrograms(data);
@@ -103,7 +103,7 @@ const Students = () => {
     setIsFetchingGlobal(true);
     setModalStep('existing');
 
-    fetch('https://gradesync-api-rx7d.onrender.com/api/grading/available-students/', { method: 'GET', headers: getAuthHeaders() })
+    fetch('http://127.0.0.1:8000/api/grading/available-students/', { method: 'GET', headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => { setAvailableStudents(data); setIsFetchingGlobal(false); })
       .catch(err => { console.error("Failed to fetch global:", err); setIsFetchingGlobal(false); });
@@ -114,7 +114,7 @@ const Students = () => {
     setErrorMessage('');
 
     try {
-      const response = await fetch('https://gradesync-api-rx7d.onrender.com/api/grading/quick-enroll/', {
+      const response = await fetch('http://127.0.0.1:8000/api/grading/quick-enroll/', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(studentData)
@@ -139,7 +139,7 @@ const Students = () => {
     setIsUnenrolling(true);
 
     try {
-      const response = await fetch(`https://gradesync-api-rx7d.onrender.com/api/grading/enrollments/${unenrollModalData.id}/`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/grading/enrollments/${unenrollModalData.id}/`, {
         method: 'DELETE', headers: getAuthHeaders()
       });
 

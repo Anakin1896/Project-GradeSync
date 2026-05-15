@@ -12,7 +12,7 @@ const DataHistory = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch('https://gradesync-api-rx7d.onrender.com/api/grading/data-history/', {
+        const response = await fetch('http://127.0.0.1:8000/api/grading/data-history/', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
